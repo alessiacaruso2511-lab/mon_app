@@ -189,7 +189,8 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 
 /* Anniversaires */
 .bday{display:flex;align-items:center;gap:14px;padding:12px 14px;width:100%;border:0;background:transparent;text-align:left;font:inherit;color:inherit}
-.bday .edit{margin-left:auto;color:var(--ink-soft);flex-shrink:0;opacity:.8}
+.bday .edit{margin-left:auto;flex-shrink:0;width:44px;height:44px;margin-right:-8px;border:0;border-radius:12px;background:transparent;color:var(--ink-soft);display:grid;place-items:center}
+.bday .edit:active{background:var(--band)}
 .bday-more{display:block;width:100%;border:0;border-top:1px dashed var(--line);background:transparent;padding:12px;font-size:14px;font-weight:800;color:var(--ink)}
 .bd-date{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px}
 .bd-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
@@ -600,8 +601,8 @@ function linksHTML(){
 }
 
 function whenBday(b){ if (b.days <= 45) return inDays(b.days); var mo = Math.round(b.days/30.4); return "Le " + b.date.getDate() + " " + MOIS[b.date.getMonth()] + " · dans " + mo + " mois"; }
-var PENCIL = '<svg class="edit" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>';
-function bdayRow(b){ return '<button type="button" class="bday" data-act="bday-edit" data-id="' + h(b.id) + '" aria-label="Modifier l\'anniversaire de ' + h(b.person) + '"><img src="' + stk(S.theme.bday) + '" alt=""><div><p class="n">' + h(b.person) + '</p><p class="w">' + h(b.date ? whenBday(b) : "Date à compléter") + '</p></div>' + PENCIL + '</button>'; }
+var PENCIL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>';
+function bdayRow(b){ return '<div class="bday"><img src="' + stk(S.theme.bday) + '" alt=""><div><p class="n">' + h(b.person) + '</p><p class="w">' + h(b.date ? whenBday(b) : "Date à compléter") + '</p></div><button type="button" class="edit" data-act="bday-edit" data-id="' + h(b.id) + '" aria-label="Modifier l\'anniversaire de ' + h(b.person) + '">' + PENCIL + '</button></div>'; }
 function allBirthdays(){ return upcomingBirthdays().concat(S.items.filter(function(i){ return i.kind === "birthday" && !i.md; }).map(function(i){ return {person:i.person, days:9999, date:null, id:i._id}; })); }
 function bdaysHTML(){
   var list = allBirthdays();
