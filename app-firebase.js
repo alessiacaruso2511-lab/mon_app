@@ -2,7 +2,7 @@
    Les réglages propres à votre projet sont dans firebase-config.js. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG, GOOGLE_CLIENT_ID, ALLOWED_EMAIL } from "./firebase-config.js";
 
 const app = initializeApp(FIREBASE_CONFIG);
@@ -17,6 +17,7 @@ function makeDb(uid){
     const ref = collection(fs, base + "/" + name);
     const api = {
       add: (data) => addDoc(ref, data),
+      newId: () => doc(ref).id,
       doc: (id) => docApi(base + "/" + name + "/" + id),
       onSnapshot: (cb, err) => onSnapshot(ref, s => cb(wrapSnap(s)), err),
       orderBy: (field, dir) => ({ limit: (n) => ({ onSnapshot: (cb, err) => onSnapshot(query(ref, orderBy(field, dir || "asc"), limit(n)), s => cb(wrapSnap(s)), err) }) })
@@ -29,6 +30,7 @@ function makeDb(uid){
       update: (data) => updateDoc(ref, data),
       set: (data) => setDoc(ref, data),
       delete: () => deleteDoc(ref),
+      get: () => getDoc(ref).then(s => ({ exists: s.exists(), data: () => s.data() })),
       onSnapshot: (cb, err) => onSnapshot(ref, s => cb({ exists: s.exists(), data: () => s.data() }), err)
     };
   }
