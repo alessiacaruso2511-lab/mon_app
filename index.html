@@ -94,6 +94,9 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 .bob{animation:bob 5s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.faller,.pulse,.bob,.bar i,.slide-next,.slide-prev,.btn-mic.on{animation:none!important}.faller{display:none}}
 
+.settings-link{display:flex;justify-content:center;margin-top:18px}
+.settings-link button{display:flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;border:0;background:transparent;color:#A69C90;font-size:13px;font-weight:700}
+
 /* Bulles */
 .bubbles-wrap{margin-top:18px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .bubbles-wrap::-webkit-scrollbar{display:none}
@@ -499,6 +502,7 @@ function upcomingBirthdays(){
 /* ---------- rendu ---------- */
 var VINE = '<svg width="52" height="14" viewBox="0 0 74 16" aria-hidden="true"%S><path d="M2 9 C 20 4, 40 13, 72 7" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M14 7 q-4 -6 2 -7 q2 5 -2 7z M28 9 q-1 -7 5 -7 q1 6 -5 7z M44 8 q-2 -6 4 -7 q2 5 -4 7z M58 7 q-3 -6 3 -6 q2 4 -3 6z" fill="currentColor" opacity="0.85"/></svg>';
 var VINE_HEAD = '<svg class="vine" width="96" height="18" viewBox="0 0 96 18" aria-hidden="true"><path d="M2 10 C 26 4, 56 14, 94 8" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M16 8 q-4 -6 2 -7 q2 5 -2 7z M32 10 q-1 -7 5 -7 q1 6 -5 7z M50 9 q-2 -6 4 -7 q2 5 -4 7z M68 8 q-3 -6 3 -6 q2 4 -3 6z M82 8 q-3 -6 3 -6 q2 4 -3 6z M24 11 q3 5 -3 6 q-2 -4 3 -6z M60 11 q3 5 -3 6 q-2 -4 3 -6z" fill="currentColor" opacity="0.85"/></svg>';
+var GEAR_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 var GEAR = '<button type="button" class="gear" data-act="settings" aria-label="Réglages"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>';
 function garlandHTML(){ var th = S.theme; return '<div class="garland">' + VINE.replace("%S", "") + '<img src="' + stk(th.motif) + '" alt="">' + VINE.replace("%S", ' style="transform:scaleX(-1)"') + '</div>'; }
 function cq(px){ return (px/3.9).toFixed(2) + "cqw"; }
@@ -520,11 +524,11 @@ function heroHTML(){
     var place = (tt.right != null ? "right:" + cq(tt.right) : "left:" + cq(tt.left)) + ";top:" + cq(tt.top) + ";width:" + cq(tt.width);
     return img + '<div class="hd-title" style="' + place + '">' + (th.halo ? '<div class="halo" style="background:radial-gradient(closest-side,' + th.c.paper + 'F0 62%,' + th.c.paper + '00 100%)"></div>' : "")
       + '<p class="mname" style="font-size:' + cq(th.size) + '">' + h(th.name) + '</p>' + garlandHTML() + '<p class="motto">' + h(th.motto) + '</p></div>'
-      + '<div class="hd-greet"><p>' + h(greetText()) + '</p>' + GEAR + '</div>';
+      + '<div class="hd-greet"><p>' + h(greetText()) + '</p></div>';
   }
   var title = S.view === "quetes" ? "Tes quêtes" : S.view === "fiche" ? "Ta fiche" : "La Gazette", sub = "";
   if (S.view === "gazette"){ var u = S.settings && S.settings.gazetteUpdatedAt; sub = '<p class="hero-sub"><span class="pulse" aria-hidden="true" style="width:8px;height:8px;border-radius:50%;background:currentColor"></span>' + h(u ? "Mise à jour " + ago(u) : "En attente de la première mise à jour") + '</p>'; }
-  return img + GEAR + '<div class="hd-page gut"><div class="halo"></div><h1>' + title + '</h1>' + garlandHTML() + sub + '</div>';
+  return img + '<div class="hd-page gut"><div class="halo"></div><h1>' + title + '</h1>' + garlandHTML() + sub + '</div>';
 }
 function ago(isoStr){ var d = new Date(isoStr); var m = Math.round((Date.now() - d.getTime())/60000); if (m < 2) return "à l'instant"; if (m < 60) return "il y a " + m + " min"; var hh = Math.round(m/60); if (hh < 24) return "il y a " + hh + " h"; var j = Math.round(hh/24); return "il y a " + j + " jour" + (j>1?"s":""); }
 
@@ -714,6 +718,7 @@ function render(){
   document.getElementById("gazBadge").hidden = !unseenN;
   document.getElementById("gazBadgeSr").textContent = unseenN ? ", " + unseenN + " nouveauté" + (unseenN > 1 ? "s" : "") : "";
   var html = v === "quetes" ? viewQuetes() : v === "fiche" ? viewFiche() : v === "gazette" ? viewGazette() : viewAccueil();
+  html += '<div class="settings-link"><button type="button" data-act="settings">' + GEAR_ICON + 'Paramètres</button></div>';
   if (S.dbState === "off") html = '<section class="section gut" style="margin-top:24px"><div class="card soft-empty">Tes données ne sont pas disponibles pour l\'instant. Vérifie ta connexion, puis recharge l\'appli.</div></section>' + html;
   document.getElementById("view").innerHTML = html;
   document.querySelectorAll("nav.tabs a").forEach(function(a){ if (a.dataset.tab === v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
