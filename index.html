@@ -1919,6 +1919,28 @@ function route(){
     location.hash = TABS[i];
   }, {passive:true});
 })();
+/* plein écran : quand la barre du téléphone (heure, notifications) est descendue et a poussé l'appli,
+   on la range au geste suivant (Chrome exige un geste de l'utilisateur pour repasser en plein écran) */
+(function(){
+  var fsMode = window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches;
+  var el = document.documentElement;
+  if (!fsMode || !el.requestFullscreen) return;
+  var maxH = window.innerHeight, barsShown = false;
+  function typing(){ var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable); }
+  window.addEventListener("resize", function(){
+    var hh = window.innerHeight;
+    if (hh > maxH) maxH = hh;
+    if (typing()) return;
+    barsShown = hh < maxH - 16 && hh > maxH - 200;
+  });
+  function hide(){
+    if (!barsShown || document.fullscreenElement || typing()) return;
+    barsShown = false;
+    el.requestFullscreen({navigationUI: "hide"}).catch(function(){});
+  }
+  document.addEventListener("touchend", hide, {passive: true});
+  document.addEventListener("click", hide, true);
+})();
 /* dictée vocale dans la barre d'ajout */
 (function(){
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition, btn = document.getElementById("micBtn");
