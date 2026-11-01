@@ -75,7 +75,7 @@ function makeCal(email){
     catch(e){ throw err("offline"); }
     if (r.status === 401){ try { localStorage.removeItem(TOK_KEY); } catch(e){} throw err("needs_auth"); }
     if (!r.ok) throw err("upstream_error", { status: r.status });
-    return r.json();
+    return r.status === 204 ? {} : r.json();
   }
   async function listEvents(a){
     const q = new URLSearchParams({ timeMin: toRfc(a.startTime), timeMax: toRfc(a.endTime), singleEvents: "true", orderBy: "startTime", maxResults: String(a.pageSize || 250) });
@@ -100,7 +100,11 @@ function makeCal(email){
     } catch(e){ w.cb({ type: "error", error: e }); }
   }
   const cal = {
-    callTool: (server, tool, args) => tool === "list_events" ? listEvents(args) : tool === "create_event" ? createEvent(args) : Promise.reject(err("unknown_tool")),
+    callTool: (server, tool, args) => tool === "list_events" ? listEvents(args) : tool === "create_event" ? createEvent(args)
+      : tool === "find_events" ? api("GET", "/calendars/" + encodeURIComponent(args.calendarId) + "/events?" + new URLSearchParams({ q: args.q, maxResults: "10" })).then(j => ({ payload: { events: j.items || [] } }))
+      : tool === "update_event" ? api("PATCH", "/calendars/" + encodeURIComponent(args.calendarId) + "/events/" + encodeURIComponent(args.eventId), { summary: args.summary, start: { date: args.startDate }, end: { date: args.endDate } }).then(j => ({ payload: j }))
+      : tool === "delete_event" ? api("DELETE", "/calendars/" + encodeURIComponent(args.calendarId) + "/events/" + encodeURIComponent(args.eventId)).then(() => ({ payload: {} }))
+      : Promise.reject(err("unknown_tool")),
     watchTool: (server, tool, args, cb, opts) => {
       const w = { args, cb };
       watchers.push(w);

@@ -188,7 +188,12 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 .btn-ink{min-height:44px;padding:9px 16px;border-radius:999px;border:0;background:var(--ink);color:#FFFDF8;font-size:14px;font-weight:800}
 
 /* Anniversaires */
-.bday{display:flex;align-items:center;gap:14px;padding:12px 14px}
+.bday{display:flex;align-items:center;gap:14px;padding:12px 14px;width:100%;border:0;background:transparent;text-align:left;font:inherit;color:inherit}
+.bday .edit{margin-left:auto;color:var(--ink-soft);flex-shrink:0;opacity:.8}
+.bday-more{display:block;width:100%;border:0;border-top:1px dashed var(--line);background:transparent;padding:12px;font-size:14px;font-weight:800;color:var(--ink)}
+.bd-date{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px}
+.bd-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.bd-actions .btn{box-sizing:border-box;height:48px;min-height:0}
 .bday+.bday{border-top:1px dashed var(--line)}
 .bday img{width:44px;height:44px;flex-shrink:0}
 .bday .n{font-size:16px;font-weight:800}
@@ -595,9 +600,12 @@ function linksHTML(){
 }
 
 function whenBday(b){ if (b.days <= 45) return inDays(b.days); var mo = Math.round(b.days/30.4); return "Le " + b.date.getDate() + " " + MOIS[b.date.getMonth()] + " · dans " + mo + " mois"; }
+var PENCIL = '<svg class="edit" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>';
+function bdayRow(b){ return '<button type="button" class="bday" data-act="bday-edit" data-id="' + h(b.id) + '" aria-label="Modifier l\'anniversaire de ' + h(b.person) + '"><img src="' + stk(S.theme.bday) + '" alt=""><div><p class="n">' + h(b.person) + '</p><p class="w">' + h(b.date ? whenBday(b) : "Date à compléter") + '</p></div>' + PENCIL + '</button>'; }
+function allBirthdays(){ return upcomingBirthdays().concat(S.items.filter(function(i){ return i.kind === "birthday" && !i.md; }).map(function(i){ return {person:i.person, days:9999, date:null, id:i._id}; })); }
 function bdaysHTML(){
-  var list = upcomingBirthdays();
-  var body = list.length ? list.slice(0,4).map(function(b){ return '<div class="bday"><img src="' + stk(S.theme.bday) + '" alt=""><div><p class="n">' + h(b.person) + '</p><p class="w">' + h(whenBday(b)) + '</p></div></div>'; }).join("")
+  var list = allBirthdays();
+  var body = list.length ? list.slice(0,4).map(bdayRow).join("") + (list.length > 4 ? '<button type="button" class="bday-more" data-act="bday-all">Voir les ' + list.length + ' anniversaires</button>' : "")
     : '<p class="soft-empty">Aucun anniversaire enregistré. Écris par exemple <b>« anniv de Marie-Sarah le 12 mars »</b>.</p>';
   return '<section class="section gut" style="margin-top:44px" aria-labelledby="bd"><h2 id="bd" style="font-size:34px">Anniversaires</h2><div class="card" style="margin-top:10px">' + body + '</div></section>';
 }
@@ -902,8 +910,8 @@ function commit(r){
     var person = cap(r.person || r.title || "");
     if (!r.date){ return db.collection("items").add(Object.assign(base, {kind:"birthday", person:person, md:null})).then(function(){ toast("Il me manque la date de l'anniversaire de " + person + "."); }); }
     var md = r.date.slice(5);
-    return db.collection("items").add(Object.assign(base, {kind:"birthday", person:person, md:md})).then(function(){
-      return createCalEvent({title:"Anniversaire de " + person, date: iso(nextOccurrence(md)), time:null, yearly:true}).then(function(){ toast("Anniversaire de " + person + " noté. Rappels à J-14, J-7 et la veille."); }).catch(function(e){ toast("Anniversaire noté dans l'appli. " + calWriteMsg(e).replace(/le rendez-vous est gardé dans l'appli\.?/,"")); });
+    return db.collection("items").add(Object.assign(base, {kind:"birthday", person:person, md:md})).then(function(ref){
+      return createCalEvent({title:"Anniversaire de " + person, date: iso(nextOccurrence(md)), time:null, yearly:true}).then(function(res){ var ev = res && res.payload; if (ref && ref.id && ev && ev.id) db.collection("items").doc(ref.id).update({gcalId: ev.id}).catch(function(){}); toast("Anniversaire de " + person + " noté. Rappels à J-14, J-7 et la veille."); }).catch(function(e){ toast("Anniversaire noté dans l'appli. " + calWriteMsg(e).replace(/le rendez-vous est gardé dans l'appli\.?/,"")); });
     });
   }
   if (r.kind === "followup") return db.collection("items").add(Object.assign(base, {kind:"followup", date: r.date || iso(addDays(today(),1)), person: r.person ? cap(r.person) : null, done:false})).then(function(){ toast("Je te le rappelle " + (r.date ? fmtDay(parseISO(r.date)) : "demain") + "."); });
@@ -1023,6 +1031,52 @@ function statSheet(k){
     + '<h3 style="margin:18px 0 8px">Derniers exploits</h3>' + (logs.length ? logs.slice(0,8).map(function(l){ return '<div class="list-line"><span>' + h(l.label) + '</span><span style="font-variant-numeric:tabular-nums">+' + (+l.xp||0) + ' XP</span></div>'; }).join("") : '<p class="soft-empty" style="padding:0">Rien pour l\'instant.</p>');
   openSheet(st.n, body);
 }
+function bdayAllSheet(){ openSheet("Tous les anniversaires", '<div class="card">' + allBirthdays().map(bdayRow).join("") + '</div>'); }
+function findBdayEvent(person){
+  if (!mcp || !mcp.callTool) return Promise.resolve(null);
+  return mcp.callTool(GC, "find_events", {calendarId:CAL, q:"Anniversaire de " + person}).then(function(r){
+    var evs = ((r && r.payload && r.payload.events) || []).filter(function(e){ return (e.summary || "").trim().toLowerCase() === ("Anniversaire de " + person).toLowerCase(); });
+    return evs.length === 1 ? evs[0].id : null;
+  }).catch(function(){ return null; });
+}
+function bdayEditSheet(id){
+  var it = S.items.find(function(i){ return i._id === id; }); if (!it) return;
+  var d = it.md ? +it.md.slice(3) : 0, m = it.md ? +it.md.slice(0,2) : 0;
+  var days = '<option value="">—</option>'; for (var k=1;k<=31;k++) days += '<option value="' + k + '"' + (k === d ? " selected" : "") + '>' + k + '</option>';
+  var months = '<option value="">—</option>' + MOIS.map(function(nm, i){ return '<option value="' + (i+1) + '"' + (i+1 === m ? " selected" : "") + '>' + nm + '</option>'; }).join("");
+  openSheet("Anniversaire", '<form id="fBday"><div class="field"><label for="bdName">Prénom</label><input id="bdName" type="text" required value="' + h(it.person || "") + '"></div><div class="bd-date"><div class="field"><label for="bdDay">Jour</label><select id="bdDay">' + days + '</select></div><div class="field"><label for="bdMonth">Mois</label><select id="bdMonth">' + months + '</select></div></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="bdDel">Supprimer</button></div></form>', function(){
+    document.getElementById("fBday").onsubmit = function(e){
+      e.preventDefault(); if (!needDb()) return;
+      var name = cap(document.getElementById("bdName").value.trim()), dd = +document.getElementById("bdDay").value, mm = +document.getElementById("bdMonth").value;
+      if (!name) return;
+      if ((dd && !mm) || (!dd && mm)){ toast("Choisis le jour et le mois."); return; }
+      if (dd && mm && dd > new Date(2024, mm, 0).getDate()){ toast("Cette date n'existe pas."); return; }
+      var md = dd && mm ? pad(mm) + "-" + pad(dd) : null, oldName = it.person, oldMd = it.md;
+      if (name === oldName && md === oldMd){ closeSheet(); return; }
+      db.collection("items").doc(id).update({person:name, md:md}).then(function(){
+        closeSheet(); toast("Anniversaire de " + name + " modifié.");
+        if (!md) return;
+        /* met aussi à jour l'événement annuel dans Google Agenda */
+        var start = iso(nextOccurrence(md)), end = iso(addDays(nextOccurrence(md), 1));
+        var getId = it.gcalId ? Promise.resolve(it.gcalId) : oldMd ? findBdayEvent(oldName) : Promise.resolve(null);
+        return getId.then(function(evId){
+          if (evId) return mcp.callTool(GC, "update_event", {calendarId:CAL, eventId:evId, summary:"Anniversaire de " + name, startDate:start, endDate:end}).then(function(){ if (!it.gcalId) db.collection("items").doc(id).update({gcalId:evId}).catch(function(){}); toast("Anniversaire de " + name + " modifié, aussi dans ton agenda."); });
+          return createCalEvent({title:"Anniversaire de " + name, date:start, time:null, yearly:true}).then(function(res){ var ev = res && res.payload; if (ev && ev.id) db.collection("items").doc(id).update({gcalId:ev.id}).catch(function(){}); if (oldMd) toast("Modifié. Pense à supprimer l'ancien anniversaire dans Google Agenda s'il y est encore."); });
+        }).catch(function(e){ toast("Modifié dans l'appli. " + calWriteMsg(e).replace(/le rendez-vous est gardé dans l'appli\.?/,"")); });
+      }).catch(dbErr);
+    };
+    document.getElementById("bdDel").onclick = function(){
+      if (!needDb()) return;
+      var copy = Object.assign({}, it); delete copy._id;
+      db.collection("items").doc(id).delete().then(function(){
+        closeSheet();
+        var getId = it.gcalId ? Promise.resolve(it.gcalId) : it.md ? findBdayEvent(it.person) : Promise.resolve(null);
+        getId.then(function(evId){ if (evId) return mcp.callTool(GC, "delete_event", {calendarId:CAL, eventId:evId}).then(function(){ toast("Anniversaire de " + it.person + " supprimé, aussi de ton agenda."); }); toast("Anniversaire de " + it.person + " supprimé."); })
+          .catch(function(){ toast("Supprimé dans l'appli. Pense à le retirer aussi de Google Agenda."); });
+      }).catch(dbErr);
+    };
+  });
+}
 function completeEventSheet(id){
   var it = S.items.find(function(i){ return i._id === id; }); if (!it) return;
   openSheet("Compléter le rendez-vous", '<p style="margin-bottom:14px"><b>' + h(it.title) + '</b> · ' + h(fmtDay(parseISO(it.date))) + '</p><form id="fEv"><div class="row"><div class="field" style="flex:1"><label for="evT">Heure de début</label><input id="evT" type="time" required></div><div class="field" style="flex:1"><label for="evE">Heure de fin (facultatif)</label><input id="evE" type="time"></div></div><div class="row"><button class="btn green" type="submit">Ajouter à mon agenda</button><button class="btn light" type="button" id="evAll">Toute la journée</button><button class="btn light" type="button" data-act="del-item" data-id="' + h(id) + '">Supprimer</button></div></form>', function(){
@@ -1045,6 +1099,8 @@ document.addEventListener("click", function(e){
   if (act === "settings"){ openSheet("Réglages", settingsHTML(), mountSettings); return; }
   if (act === "gcal-connect"){ if (mcp && mcp.connect) mcp.connect().then(function(){ toast("Google Agenda est synchronisé."); }).catch(function(){ toast(navigator.onLine ? "La connexion à Google Agenda n'a pas abouti." : "Pas de connexion internet pour l'instant."); }); return; }
   if (act === "export"){ exportBackup(); return; }
+  if (act === "bday-edit"){ bdayEditSheet(id); return; }
+  if (act === "bday-all"){ bdayAllSheet(); return; }
   if (act === "import"){ var fi = document.getElementById("impFile"); if (fi) fi.click(); return; }
   if (act === "signout"){ if (window.APP_SIGNOUT) window.APP_SIGNOUT(); return; }
   if (act === "topic"){ S.topicFilter = b.dataset.t; render(); return; }
