@@ -30,7 +30,7 @@ html,body{background:var(--paper);color:var(--text)}
 body{margin:0;font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 #paper{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(circle, var(--dot) 1.1px, transparent 1.4px);background-size:20px 20px}
 #drift{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
-#app{position:relative;z-index:2;max-width:560px;min-height:100vh;margin:0 auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(110px + env(safe-area-inset-bottom,0px));overflow:hidden}
+#app{position:relative;z-index:2;max-width:560px;min-height:100vh;margin:0 auto;padding-bottom:calc(110px + env(safe-area-inset-bottom,0px));overflow:hidden}
 .wash{position:absolute;border-radius:50%;pointer-events:none;z-index:-1}
 h1,h2,h3{margin:0;text-wrap:balance;color:var(--text)}
 h2{font-family:var(--f-hand);font-weight:700;font-size:38px;line-height:1;color:var(--ink)}
@@ -64,9 +64,9 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 .hd-greet p{font-size:17px;font-weight:700;color:var(--text);text-align:center}
 .gear{position:absolute;right:max(14px,env(safe-area-inset-right,0px));width:44px;height:44px;border-radius:14px;border:1.5px solid var(--line);background:rgba(255,253,248,.85);display:grid;place-items:center;color:var(--ink)}
 .hd-greet .gear{bottom:-10px}
-.hd.small{height:auto;padding:56px 0 6px}
+.hd.small{height:auto;padding:calc(56px + env(safe-area-inset-top,0px)) 0 6px}
 .hd.small .hd-img{height:44cqw;opacity:.42;-webkit-mask-image:linear-gradient(to bottom,#000 30%,transparent 100%);mask-image:linear-gradient(to bottom,#000 30%,transparent 100%)}
-.hd.small .gear{top:14px}
+.hd.small .gear{top:calc(14px + env(safe-area-inset-top,0px))}
 .hd-page{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
 .hd-page h1{font-family:var(--f-hand);font-weight:700;font-size:54px;line-height:1.05;color:var(--ink)}
 .hd-page .halo{position:absolute;left:12%;right:12%;top:-18px;bottom:-14px;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,var(--paper) 60%,transparent 100%)}
