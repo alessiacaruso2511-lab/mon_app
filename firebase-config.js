@@ -12,7 +12,7 @@ export const FIREBASE_CONFIG = {
 };
 
 /* ID client OAuth « Application Web » créé dans Google Cloud (étape 3) */
-export const GOOGLE_CLIENT_ID = "A_REMPLIR.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = "146585661949-kpokg3nrt2nj7sl7gipqdi9supif6i72.apps.googleusercontent.com";
 
 /* Le seul compte autorisé à ouvrir l'appli */
 export const ALLOWED_EMAIL = "alessia.caruso2511@gmail.com";
