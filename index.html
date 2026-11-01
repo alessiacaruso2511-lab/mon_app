@@ -967,9 +967,51 @@ function stripWords(text){
     .replace(/^(il faut que je|je dois|faut que je|penser à|penser a|ne pas oublier de|ne pas oublier d')\s*/i,"")
     .replace(/\s+/g," ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g,"").replace(/\s+(à|a|vers|de|le|la|pour)$/i,"").trim();
 }
+/* commandes de notes : « crée une note liste de courses avec œufs, lait, farine », « ajoute du beurre à ma liste de courses », « note : … » */
+function splitItems(str){
+  return String(str).replace(/\b(etc\.?|et cetera)\b/gi, "").replace(/(\.\.\.|…)/g, "").split(/\s*(?:,|;|\n|\s\+\s|\bet\b|\bpuis\b)\s*/i)
+    .map(function(x){ return x.replace(/^(?:du|de la|de l'|de l’|des|un|une|le|la|les|l'|l’)\s+/i, function(m){ return m; }).replace(/^[\s\-–•.:]+|[\s\-–•.:]+$/g, ""); }).filter(Boolean).map(cap);
+}
+function findNoteByTitle(t){
+  var q = noAcc(String(t || "").toLowerCase()).replace(/^(?:la|ma|mes|le|mon|les)\s+/, "").replace(/^note\s+/, "").trim();
+  if (!q) return null;
+  var live = liveNotes(), norm = function(n){ return noAcc((n.title || "").toLowerCase()).trim(); };
+  return live.find(function(n){ return norm(n) === q; }) || live.find(function(n){ var t2 = norm(n); return t2 && (t2.indexOf(q) >= 0 || q.indexOf(t2) >= 0); })
+    || live.find(function(n){ var t2 = norm(n).replace(/s\b/g, ""), q2 = q.replace(/s\b/g, ""); return t2 && (t2.indexOf(q2) >= 0 || q2.indexOf(t2) >= 0); }) || null;
+}
+function parseNoteCmd(text){
+  var t = text.trim().replace(/[.!]+$/, ""), m;
+  /* note : contenu */
+  if ((m = t.match(/^(?:note|noter|idée|idee)\s*:\s*([\s\S]+)/i))) return {kind:"note", title:"", text:cap(m[1].trim()), items:[]};
+  /* ajouter à une note existante */
+  if ((m = t.match(/^(?:ajoute|ajouter|rajoute|rajouter|mets|mettre|note)\s+([\s\S]+?)\s+(?:à|a|dans|sur)\s+((?:la|ma|mes|le|mon)\s+[\s\S]+)$/i))){
+    var target = m[2].replace(/^(?:la|ma|mes|le|mon)\s+/i, ""), isNoteTarget = /^(?:note|liste)/i.test(target) || findNoteByTitle(target);
+    if (isNoteTarget){
+      var hit = findNoteByTitle(target);
+      var items = splitItems(m[1]);
+      if (hit) return {kind:"note-add", noteId:hit._id, title:hit.title, items:items};
+      var nt = cap(target.replace(/^note\s+/i, ""));
+      return {kind:"note", title:nt, text:"", items:items, todo:true};
+    }
+  }
+  /* créer une note / une liste */
+  if ((m = t.match(/^(?:(?:cr[ée]{1,2}r?|cr[ée]e|fais|faire|fait|ouvre|ouvrir|écris|ecris|prends|prendre)\s+)?(?:moi\s+)?(?:une\s+)?(?:nouvelle\s+)?(note|liste)\b\s*([\s\S]*)$/i)) && (/^(?:cr|fai|ouv|écr|ecr|pren|nouv|une)/i.test(t) || /^liste\s/i.test(t))){
+    var word = m[1].toLowerCase(), rest = m[2].trim().replace(/^(?:intitulée|appelée|nommée|qui s'appelle)\s+/i, "");
+    var sep = rest.match(/^([\s\S]*?)\s*(?:\bavec\b|\bcontenant\b|\bqui contient\b|:|\bpour y mettre\b)\s*([\s\S]*)$/i);
+    var title = sep ? sep[1].trim() : rest, body = sep ? sep[2].trim() : "";
+    if (word === "liste") title = ("Liste " + title).trim();
+    title = cap(title.replace(/^(?:de|d')\s*$/i, "").trim()) || (word === "liste" ? "Liste" : "");
+    var its = body ? splitItems(body) : [];
+    var todo = word === "liste" || /\bliste\b|courses?/i.test(title) || its.length >= 3;
+    if (!todo && body) return {kind:"note", title:title, text:cap(body), items:[]};
+    return {kind:"note", title:title, text:"", items:its, todo:true};
+  }
+  return null;
+}
+function todoHTML(items){ return '<ul class="todo">' + items.map(function(i){ return '<li data-done="0">' + h(i) + '</li>'; }).join("") + '</ul>'; }
+function textFromHTML(html){ var d = document.createElement("div"); d.innerHTML = html; return noteText(d); }
 function localParse(text){
-  var nm = text.trim().match(/^(?:note|noter|idée|idee)\s*:\s*([\s\S]+)/i);
-  if (nm) return {kind:"note", title:"", text:cap(nm[1].trim())};
+  var nc = parseNoteCmd(text); if (nc) return nc;
   var s = text.toLowerCase().trim(), n = noAcc(s), t = today(), date = null, time = null, endTime = null;
   var tm = s.match(/(\d{1,2})\s*h\s*(\d{2})?(?:\s*(?:à|a|-)\s*(\d{1,2})\s*h\s*(\d{2})?)?/);
   if (tm){ time = pad(+tm[1]) + ":" + (tm[2] || "00"); if (tm[3]) endTime = pad(+tm[3]) + ":" + (tm[4] || "00"); }
@@ -1015,7 +1057,8 @@ function describe(r){
     case "birthday": return "Anniversaire de " + r.person + (d ? " · " + d : "");
     case "followup": return "Rappel : " + r.title + (d ? " · " + d : "");
     case "quest": return "Nouvelle quête : " + r.title;
-    case "note": return "Nouvelle note : " + r.text.slice(0, 40) + (r.text.length > 40 ? "…" : "");
+    case "note": return "Nouvelle note" + (r.title ? " « " + r.title + " »" : "") + (r.items && r.items.length ? " · " + r.items.length + " élément" + (r.items.length > 1 ? "s" : "") : r.text ? " : " + r.text.slice(0, 40) + (r.text.length > 40 ? "…" : "") : "");
+    case "note-add": return "Ajouté à « " + (r.title || "ta note") + " » : " + r.items.join(", ").slice(0, 60);
     case "exploit": return "+" + (r.xp||15) + " XP en " + (STATS[r.stat] || STATS.sag).n;
     case "contact": return "Lien entretenu" + (r.person ? " avec " + r.person : "") + " · +15 XP";
   }
@@ -1041,7 +1084,20 @@ function commit(r){
       return createCalEvent({title:"Anniversaire de " + person, date: iso(nextOccurrence(md)), time:null, yearly:true}).then(function(res){ var ev = res && res.payload; if (ref && ref.id && ev && ev.id) db.collection("items").doc(ref.id).update({gcalId: ev.id}).catch(function(){}); toast("Anniversaire de " + person + " noté. Rappels à J-14, J-7 et la veille."); }).catch(function(e){ toast("Anniversaire noté dans l'appli. " + calWriteMsg(e).replace(/le rendez-vous est gardé dans l'appli\.?/,"")); });
     });
   }
-  if (r.kind === "note"){ var nid = db.collection("notes").newId(), now = nowISO(); return db.collection("notes").doc(nid).set({title:"", html:"<div>" + h(r.text) + "</div>", text:r.text, media:[], thumb:null, hasAudio:false, folder:null, bg:"papier", pinned:false, deleted:false, createdAt:now, updatedAt:now}).then(function(){ toast("Note ajoutée dans tes notes."); }); }
+  if (r.kind === "note"){
+    var nid = db.collection("notes").newId(), now = nowISO();
+    var html = (r.text ? "<div>" + h(r.text) + "</div>" : "") + (r.items && r.items.length ? todoHTML(r.items) : r.todo ? todoHTML([""]) : "");
+    return db.collection("notes").doc(nid).set({title:r.title || "", html:html, text:textFromHTML(html), media:[], thumb:null, hasAudio:false, folder:null, bg:"papier", pinned:false, deleted:false, createdAt:now, updatedAt:now}).then(function(){ toast("Note ajoutée dans tes notes."); });
+  }
+  if (r.kind === "note-add"){
+    var tn = S.notes.find(function(n){ return n._id === r.noteId; }); if (!tn || !r.items.length) return;
+    var d = document.createElement("div"); d.innerHTML = tn.html || "";
+    var lists = d.querySelectorAll("ul.todo"), ul = lists[lists.length - 1];
+    if (ul){ r.items.forEach(function(i){ var li = document.createElement("li"); li.dataset.done = "0"; li.textContent = i; ul.appendChild(li); }); }
+    else d.insertAdjacentHTML("beforeend", todoHTML(r.items));
+    var nh = d.innerHTML;
+    return db.collection("notes").doc(tn._id).update({html:nh, text:textFromHTML(nh), updatedAt:nowISO(), deleted:false}).then(function(){ toast("Ajouté à « " + (tn.title || "ta note") + " »."); });
+  }
   if (r.kind === "followup") return db.collection("items").add(Object.assign(base, {kind:"followup", date: r.date || iso(addDays(today(),1)), person: r.person ? cap(r.person) : null, done:false})).then(function(){ toast("Je te le rappelle " + (r.date ? fmtDay(parseISO(r.date)) : "demain") + "."); });
   if (r.kind === "quest"){
     var steps = (Array.isArray(r.steps) ? r.steps : []).slice(0,5).map(function(t){ return {t: cap(String(t)), done:false}; });
