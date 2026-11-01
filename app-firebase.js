@@ -103,6 +103,7 @@ function makeCal(email){
     callTool: (server, tool, args) => tool === "list_events" ? listEvents(args) : tool === "create_event" ? createEvent(args)
       : tool === "find_events" ? api("GET", "/calendars/" + encodeURIComponent(args.calendarId) + "/events?" + new URLSearchParams({ q: args.q, maxResults: "10" })).then(j => ({ payload: { events: j.items || [] } }))
       : tool === "update_event" ? api("PATCH", "/calendars/" + encodeURIComponent(args.calendarId) + "/events/" + encodeURIComponent(args.eventId), { summary: args.summary, start: { date: args.startDate }, end: { date: args.endDate } }).then(j => ({ payload: j }))
+      : tool === "patch_event" ? api("PATCH", "/calendars/" + encodeURIComponent(args.calendarId) + "/events/" + encodeURIComponent(args.eventId), args.body).then(j => ({ payload: j }))
       : tool === "delete_event" ? api("DELETE", "/calendars/" + encodeURIComponent(args.calendarId) + "/events/" + encodeURIComponent(args.eventId)).then(() => ({ payload: {} }))
       : Promise.reject(err("unknown_tool")),
     watchTool: (server, tool, args, cb, opts) => {

@@ -142,7 +142,11 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 .day.today .dband{background:var(--ink)}
 .day.today .dband span{color:#FFFDF8}
 .day.past .dband,.day.past .ev{opacity:.5}
-.ev{display:flex;align-items:baseline;gap:8px;padding:7px 4px 0;flex-wrap:wrap}
+.ev{display:flex;align-items:baseline;gap:8px;padding:7px 4px 0}
+.ev-body{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ev-edit{align-self:center;flex-shrink:0;box-sizing:border-box;width:38px;height:38px;margin:-6px -4px -6px 0;padding:0;border:0;border-radius:10px;background:transparent;color:var(--ink-soft);display:grid;place-items:center}
+.ev-edit:active{background:var(--band)}
+.ev-time{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ev::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ink);flex-shrink:0;transform:translateY(-2px)}
 .ev-t{font-size:14px;font-weight:700;overflow-wrap:anywhere}
 .ev-m{font-size:13px;color:var(--muted)}
@@ -470,7 +474,7 @@ function activeQuests(){ return S.items.filter(function(i){ return i.kind === "q
 function gcalAll(){ var ids = {}, out = S.gcal.slice(); S.gcal.forEach(function(e){ ids[e.id] = 1; }); Object.keys(S.gcalExtra).forEach(function(k){ S.gcalExtra[k].forEach(function(e){ if (!ids[e.id]){ ids[e.id] = 1; out.push(e); } }); }); return out; }
 function eventsOn(dIso){
   var all = gcalAll();
-  var list = all.filter(function(e){ return e.date === dIso; }).map(function(e){ return {title:e.title, time:e.time, meta:e.location, src:"gcal"}; });
+  var list = all.filter(function(e){ return e.date === dIso; }).map(function(e){ return {title:e.title, time:e.time, meta:e.location, src:"gcal", gid:e.id}; });
   S.items.forEach(function(i){
     if (i.kind === "event" && i.date === dIso) list.push({title:i.title, time:i.time, todo:!i.time, id:i._id, src:"draft", unsynced:i.unsynced});
     if (i.kind === "followup" && !i.done && i.date === dIso) list.push({title:i.title, meta:"Prendre des nouvelles", src:"follow"});
@@ -561,8 +565,8 @@ function weekHTML(){
   for (var i=0;i<7;i++){
     var d = addDays(m,i), di = iso(d), evs = eventsOn(di), isToday = di === iso(t), past = d < t;
     var inner = evs.length ? evs.map(function(e){
-      if (e.todo) return '<div class="ev"><span class="ev-t">' + h(e.title) + '</span><button type="button" class="pill-todo" data-act="complete-event" data-id="' + h(e.id) + '">À compléter : l\'heure</button></div>';
-      return '<div class="ev"><span class="ev-t">' + h(e.title) + '</span><span class="ev-m">' + h([e.time ? fmtTime(e.time) : (e.src==="gcal" ? "Toute la journée" : ""), e.meta].filter(Boolean).join(" · ")) + (e.unsynced ? ' · pas encore dans ton agenda' : '') + '</span></div>';
+      if (e.todo) return '<div class="ev"><div class="ev-body"><span class="ev-t">' + h(e.title) + '</span><button type="button" class="pill-todo" data-act="complete-event" data-id="' + h(e.id) + '">À compléter : l\'heure</button></div>' + evEditBtn(e) + '</div>';
+      return '<div class="ev"><div class="ev-body"><span class="ev-t">' + h(e.title) + '</span><span class="ev-m">' + h([e.time ? fmtTime(e.time) : (e.src==="gcal" ? "Toute la journée" : ""), e.meta].filter(Boolean).join(" · ")) + (e.unsynced ? ' · pas encore dans ton agenda' : '') + '</span></div>' + evEditBtn(e) + '</div>';
     }).join("") : '<div class="empty-day" aria-hidden="true"><i></i><i></i><i></i></div><span class="sr">Rien de prévu</span>';
     rows.push('<div class="day' + (isToday ? " today" : "") + (past ? " past" : "") + '"><div class="dband"><span>' + JOURS[d.getDay()].replace(".","") + (isToday ? " · aujourd'hui" : "") + '</span><span>' + d.getDate() + '</span></div>' + inner + '</div>');
   }
@@ -766,7 +770,8 @@ function normEvents(payload){
   var evs = (payload && payload.events) || [];
   return evs.filter(function(e){ return e.status !== "cancelled"; }).map(function(e){
     var s = e.start || {}, dt = s.dateTime || "", d = dt ? dt.slice(0,10) : (s.date || "");
-    return {id:e.id, title:e.summary || "Sans titre", date:d, time: dt ? dt.slice(11,16) : null, location:e.location || "", allDay:!dt};
+    var en = e.end || {}, edt = en.dateTime || "";
+    return {id:e.id, title:e.summary || "Sans titre", date:d, time: dt ? dt.slice(11,16) : null, endTime: edt ? edt.slice(11,16) : null, location:e.location || "", allDay:!dt, recurring:!!e.recurringEventId};
   });
 }
 var calRange = null;
@@ -972,7 +977,59 @@ function ensureMonth(m0){
     S.monthLoading[key] = false; var mb = document.getElementById("mBody"); if (mb) mb.innerHTML = monthHTML();
   });
 }
-function evLine(e){ return '<div class="ev"><span class="ev-t">' + h(e.title) + '</span><span class="ev-m">' + h(e.todo ? "Heure à compléter" : (e.time ? fmtTime(e.time) : "Toute la journée") + (e.meta ? " · " + e.meta : "")) + '</span></div>'; }
+function evLine(e){ return '<div class="ev"><div class="ev-body"><span class="ev-t">' + h(e.title) + '</span><span class="ev-m">' + h(e.todo ? "Heure à compléter" : (e.time ? fmtTime(e.time) : "Toute la journée") + (e.meta ? " · " + e.meta : "")) + '</span></div>' + evEditBtn(e) + '</div>'; }
+function evEditBtn(e){
+  if (e.src === "gcal") return '<button type="button" class="ev-edit" data-act="ev-edit" data-gid="' + h(e.gid) + '" aria-label="Modifier « ' + h(e.title) + ' »">' + PENCIL + '</button>';
+  if (e.src === "draft") return '<button type="button" class="ev-edit" data-act="ev-edit" data-id="' + h(e.id) + '" aria-label="Modifier « ' + h(e.title) + ' »">' + PENCIL + '</button>';
+  return "";
+}
+function afterCalChange(){ try { mcp.invalidate(); } catch(e){} var mb = document.getElementById("mBody"); if (mb) mb.innerHTML = monthHTML(); }
+function eventEditSheet(gid, did){
+  var g = gid ? gcalAll().find(function(e){ return e.id === gid; }) : null;
+  var it = did ? S.items.find(function(i){ return i._id === did; }) : null;
+  if (!g && !it) return;
+  var ev = g ? {title:g.title, date:g.date, time:g.time || "", end:g.endTime || "", place:g.location || ""} : {title:it.title, date:it.date, time:it.time || "", end:it.endTime || "", place:it.place || ""};
+  var note = g && g.recurring ? '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Événement qui se répète : seule cette date sera modifiée.</p>' : "";
+  var back = document.getElementById("mBody") ? function(){ openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); } : closeSheet;
+  openSheet("Modifier l'événement", note + '<form id="fEvEdit"><div class="field"><label for="eTitle">Titre</label><input id="eTitle" type="text" required value="' + h(ev.title) + '"></div><div class="field"><label for="eDate">Date</label><input id="eDate" type="date" required value="' + h(ev.date) + '"></div><div class="ev-time"><div class="field"><label for="eStart">Début</label><input id="eStart" type="time" value="' + h(ev.time) + '"></div><div class="field"><label for="eEnd">Fin</label><input id="eEnd" type="time" value="' + h(ev.end) + '"></div></div><p style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Sans heure de début, l\'événement dure toute la journée.</p><div class="field"><label for="ePlace">Lieu</label><input id="ePlace" type="text" value="' + h(ev.place) + '" placeholder="Facultatif"></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="eDel">Supprimer</button></div></form>', function(){
+    document.getElementById("fEvEdit").onsubmit = function(e){
+      e.preventDefault();
+      var title = cap(document.getElementById("eTitle").value.trim()), date = document.getElementById("eDate").value, start = document.getElementById("eStart").value, end = document.getElementById("eEnd").value, place = document.getElementById("ePlace").value.trim();
+      if (!title || !date) return;
+      if (end && !start){ toast("Indique aussi l'heure de début."); return; }
+      if (start && end && end <= start){ toast("L'heure de fin doit être après le début."); return; }
+      if (g){
+        var body = {summary:title, location:place};
+        if (start){ body.start = {dateTime: date + "T" + start + ":00", timeZone:"Europe/Paris"}; body.end = {dateTime: end ? date + "T" + end + ":00" : endOf(date, start), timeZone:"Europe/Paris"}; }
+        else { body.start = {date: date}; body.end = {date: iso(addDays(parseISO(date), 1))}; }
+        mcp.callTool(GC, "patch_event", {calendarId:CAL, eventId:gid, body:body}).then(function(){
+          Object.assign(g, {title:title, date:date, time:start || null, endTime:end || null, location:place, allDay:!start});
+          back(); render(); toast("Événement modifié dans ton agenda."); afterCalChange();
+        }).catch(function(er){ toast(calWriteMsg(er).replace(/ : le rendez-vous est gardé dans l'appli\.?|le rendez-vous est gardé dans l'appli\.?/,"").trim() || "La modification n'a pas abouti."); });
+        return;
+      }
+      if (!needDb()) return;
+      if (start){
+        createCalEvent({title:title, date:date, time:start, endTime:end || null}).then(function(){ return db.collection("items").doc(did).delete(); }).then(function(){ back(); toast("Ajouté à ton agenda avec tes rappels."); afterCalChange(); })
+          .catch(function(){ db.collection("items").doc(did).update({title:title, date:date, time:start, endTime:end || null, place:place, unsynced:true}).then(function(){ back(); toast("Modifié dans l'appli. Il sera à remettre dans l'agenda quand il sera joignable."); }).catch(dbErr); });
+      } else {
+        db.collection("items").doc(did).update({title:title, date:date, time:null, endTime:null, place:place}).then(function(){ back(); toast("Événement modifié."); }).catch(dbErr);
+      }
+    };
+    document.getElementById("eDel").onclick = function(){
+      if (g){
+        mcp.callTool(GC, "delete_event", {calendarId:CAL, eventId:gid}).then(function(){
+          S.gcal = S.gcal.filter(function(x){ return x.id !== gid; }); Object.keys(S.gcalExtra).forEach(function(k){ S.gcalExtra[k] = S.gcalExtra[k].filter(function(x){ return x.id !== gid; }); });
+          back(); render(); toast("Événement supprimé de ton agenda."); afterCalChange();
+        }).catch(function(er){ toast("La suppression n'a pas abouti. " + (er && er.code === "offline" ? "Pas de connexion." : "")); });
+        return;
+      }
+      if (!needDb()) return;
+      var copy = Object.assign({}, it); delete copy._id;
+      db.collection("items").doc(did).delete().then(function(){ back(); toast("Supprimé.", {undo:function(){ db.collection("items").doc(did).set(copy).catch(dbErr); }}); }).catch(dbErr);
+    };
+  });
+}
 function monthHTML(){
   var t = today(), m0 = new Date(t.getFullYear(), t.getMonth() + S.monthOffset, 1), dim = new Date(m0.getFullYear(), m0.getMonth()+1, 0).getDate();
   var key = monthKey(m0); ensureMonth(m0);
@@ -1113,6 +1170,7 @@ document.addEventListener("click", function(e){
   if (act === "gcal-connect"){ if (mcp && mcp.connect) mcp.connect().then(function(){ toast("Google Agenda est synchronisé."); refreshSettings(); }).catch(function(){ toast(navigator.onLine ? "La connexion à Google Agenda n'a pas abouti." : "Pas de connexion internet pour l'instant."); }); return; }
   if (act === "export"){ exportBackup(); return; }
   if (act === "bday-edit"){ bdayEditSheet(id); return; }
+  if (act === "ev-edit"){ eventEditSheet(b.dataset.gid || null, b.dataset.id || null); return; }
   if (act === "bday-all"){ bdayAllSheet(); return; }
   if (act === "import"){ var fi = document.getElementById("impFile"); if (fi) fi.click(); return; }
   if (act === "signout"){ if (window.APP_SIGNOUT) window.APP_SIGNOUT(); return; }
