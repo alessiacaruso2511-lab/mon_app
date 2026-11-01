@@ -10,7 +10,7 @@ Dans ce guide, remplace `PSEUDO` par ton nom d'utilisateur GitHub et `DEPOT` par
 
 1. Crée un dépôt **public**, par exemple `carnet`. GitHub Pages gratuit demande un dépôt public. Le code ne contient aucune donnée personnelle : tout ce qui est privé reste dans Firebase.
 2. Dépose tous les fichiers du dossier à la racine du dépôt, **y compris** le dossier caché `.github`.
-3. Va dans **Settings → Pages** et choisis *Source : Deploy from a branch*, *Branch : `main` / `(root)`*, puis **Save**.
+3. Va dans **Settings → Pages** et choisis *Source : **GitHub Actions***. La mise en ligne passe alors par `.github/workflows/deploy.yml`, qui numérote chaque version automatiquement.
 4. Au bout d'une minute, l'appli est en ligne sur `https://PSEUDO.github.io/DEPOT/`. Elle affiche encore une erreur tant que l'étape 2 n'est pas faite : c'est normal.
 
 > ⚠️ Ne mets **jamais** dans le dépôt le fichier `sauvegarde-tableau-de-bord.json` ni la clé du compte de service (étape 4). Le `.gitignore` les bloque déjà.
@@ -75,7 +75,7 @@ Ouvre `https://PSEUDO.github.io/DEPOT/` sur un ordinateur : l'écran « Mon carn
 
 ## Mettre à jour l'appli plus tard
 
-Après chaque modification du code, change la ligne `const VERSION = "carnet-v1"` dans `sw.js` (`carnet-v2`, etc.). Sinon, le téléphone peut garder l'ancienne version en mémoire.
+Rien à faire à la main : chaque modification poussée sur `main` est mise en ligne automatiquement (onglet **Actions → Mise en ligne**, environ 1 minute), avec un nouveau numéro de version. Le téléphone télécharge la nouvelle version en arrière-plan à la prochaine ouverture de l'appli, puis l'appli se recharge une fois toute seule.
 
 ## Ce qui marche sans internet
 

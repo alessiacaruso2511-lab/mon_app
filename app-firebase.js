@@ -150,4 +150,13 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* ---------- hors connexion : l'appli se met en cache ---------- */
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+if ("serviceWorker" in navigator){
+  /* Quand une nouvelle version est en ligne, elle s'installe en arrière-plan puis l'appli se recharge une fois toute seule */
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController && !reloaded){ reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((reg) => {
+    /* vérifie aussi quand l'appli revient au premier plan (elle peut rester ouverte des jours sur un téléphone) */
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); });
+  }).catch(() => {});
+}
