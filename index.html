@@ -77,6 +77,14 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 @keyframes rain{0%{transform:translate(0,-30px);opacity:0}10%{opacity:.6}100%{transform:translate(-30px,108vh);opacity:.4}}
 @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
 @keyframes burst{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(260deg);opacity:0}}
+@keyframes micPulse{0%{box-shadow:0 0 0 0 rgba(224,64,94,.45)}100%{box-shadow:0 0 0 12px rgba(224,64,94,0)}}
+@keyframes inFromRight{from{transform:translateX(36px);opacity:0}to{transform:none;opacity:1}}
+@keyframes inFromLeft{from{transform:translateX(-36px);opacity:0}to{transform:none;opacity:1}}
+.slide-next{animation:inFromRight .24s ease-out}
+.slide-prev{animation:inFromLeft .24s ease-out}
+.btn-mic{width:44px;height:44px;border-radius:14px;border:1.5px solid var(--line);background:#FFFDF8;color:var(--ink);display:grid;place-items:center;flex-shrink:0}
+.btn-mic[hidden]{display:none}
+.btn-mic.on{background:#FCE3E8;border-color:#E0405E;color:#B02848;animation:micPulse 1.2s ease-out infinite}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.4}}
 @keyframes shimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-4px) rotate(var(--r,0deg))}}
@@ -84,7 +92,7 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 .faller.raindrop{animation-name:rain;animation-timing-function:linear}
 .pulse{animation:pulse 2.4s ease-in-out infinite}
 .bob{animation:bob 5s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.faller,.pulse,.bob,.bar i{animation:none!important}.faller{display:none}}
+@media (prefers-reduced-motion:reduce){.faller,.pulse,.bob,.bar i,.slide-next,.slide-prev,.btn-mic.on{animation:none!important}.faller{display:none}}
 
 /* Bulles */
 .bubbles-wrap{margin-top:18px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -304,6 +312,7 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
     <form class="capture" id="captureForm" autocomplete="off">
       <label for="captureInput" class="sr">Ajoute un rendez-vous, une quête, un anniversaire ou un exploit</label>
       <input id="captureInput" type="text" enterkeyhint="send" placeholder="« mardi rdv gastro 17h30 »">
+      <button class="btn-mic" id="micBtn" type="button" aria-label="Dicter" aria-pressed="false" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       <button class="btn-add" id="captureBtn" type="submit" aria-label="Ajouter">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFDF8" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       </button>
@@ -1068,7 +1077,53 @@ document.addEventListener("click", function(e){
 document.addEventListener("keydown", function(e){ if (e.key === "Escape") { closeSheet(); var l = document.querySelector(".levelup"); if (l) l.remove(); } });
 document.getElementById("captureForm").addEventListener("submit", onCapture);
 
-function route(){ var hsh = (location.hash || "").replace("#",""); S.view = ["accueil","quetes","fiche","gazette"].indexOf(hsh) >= 0 ? hsh : "accueil"; render(); window.scrollTo(0,0); }
+var TABS = ["accueil","quetes","fiche","gazette"];
+function route(){
+  var hsh = (location.hash || "").replace("#",""), prev = S.view;
+  S.view = TABS.indexOf(hsh) >= 0 ? hsh : "accueil";
+  render(); window.scrollTo(0,0);
+  if (prev && prev !== S.view){
+    var app = document.getElementById("app"), cls = TABS.indexOf(S.view) > TABS.indexOf(prev) ? "slide-next" : "slide-prev";
+    app.classList.remove("slide-next","slide-prev"); void app.offsetWidth; app.classList.add(cls);
+    setTimeout(function(){ app.classList.remove(cls); }, 300);
+  }
+}
+/* glisser le doigt à gauche ou à droite pour changer de page */
+(function(){
+  var x0 = null, y0 = 0, t0 = 0;
+  document.addEventListener("touchstart", function(e){
+    if (e.touches.length !== 1 || document.querySelector(".sheet-wrap,.levelup")) { x0 = null; return; }
+    if (e.target.closest(".bubbles-wrap,.topics,input,select,textarea,.month")) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now();
+  }, {passive:true});
+  document.addEventListener("touchend", function(e){
+    if (x0 === null) return;
+    var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - t0 > 700) return;
+    var i = TABS.indexOf(S.view) + (dx < 0 ? 1 : -1);
+    if (i < 0 || i >= TABS.length) return;
+    location.hash = TABS[i];
+  }, {passive:true});
+})();
+/* dictée vocale dans la barre d'ajout */
+(function(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, btn = document.getElementById("micBtn");
+  if (!SR || !btn) return;
+  btn.hidden = false;
+  var rec = null, input = document.getElementById("captureInput"), hint = document.getElementById("captureHint"), base = "";
+  function stop(){ if (hint.textContent === "Je t'écoute…") hint.textContent = ""; btn.classList.remove("on"); btn.setAttribute("aria-pressed","false"); btn.setAttribute("aria-label","Dicter"); rec = null; }
+  btn.addEventListener("click", function(){
+    if (rec){ rec.stop(); return; }
+    if (!navigator.onLine){ toast("La dictée a besoin d'internet. Tu peux utiliser le micro de ton clavier."); return; }
+    rec = new SR(); rec.lang = "fr-FR"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    base = input.value ? input.value.replace(/\s+$/,"") + " " : "";
+    rec.onresult = function(ev){ var txt = ""; for (var i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript; input.value = base + txt.trim(); };
+    rec.onerror = function(ev){ var c = ev && ev.error; if (c === "not-allowed" || c === "service-not-allowed") toast("Autorise le micro pour cette appli dans les réglages de Chrome."); else if (c === "no-speech") toast("Je n'ai rien entendu. Réessaie."); else if (c !== "aborted") toast("La dictée n'a pas fonctionné. Réessaie."); stop(); };
+    rec.onend = function(){ var had = rec !== null; stop(); if (had && input.value.trim()){ input.focus(); hint.innerHTML = "<strong>Vérifie, puis touche +</strong>"; setTimeout(function(){ if (hint.textContent === "Vérifie, puis touche +") hint.textContent = ""; }, 5000); } };
+    try { rec.start(); btn.classList.add("on"); btn.setAttribute("aria-pressed","true"); btn.setAttribute("aria-label","Arrêter la dictée"); hint.textContent = "Je t'écoute…"; }
+    catch(e){ stop(); toast("La dictée n'a pas pu démarrer."); }
+  });
+})();
 window.addEventListener("hashchange", route);
 
 /* ---------- démarrage ---------- */
