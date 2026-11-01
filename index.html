@@ -253,6 +253,8 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .field label{font-size:13px;font-weight:800;color:var(--muted)}
 .field input,.field select{box-sizing:border-box;width:100%;height:48px;border:1.5px solid var(--line);background:#FFFDF8;border-radius:10px;padding:0 14px;font-size:16px;color:var(--text)}
+.bk-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bk-row .btn{box-sizing:border-box;height:48px;min-height:0;padding:0 12px}
 .fgrid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
 .fgrid .field{margin:0;min-width:0}
 .fgrid .wide{grid-column:1/-1}
@@ -979,7 +981,7 @@ function settingsHTML(){
     + '<form id="fP" class="fgrid" style="margin:12px 0 22px"><div class="field wide"><label for="pName">Prénom</label><input id="pName" type="text" required></div><div class="field"><label for="pEvery">Rythme</label><select id="pEvery"><option value="7">7 jours</option><option value="14" selected>14 jours</option><option value="21">21 jours</option><option value="30">30 jours</option><option value="60">60 jours</option></select></div><button class="btn green" type="submit">Ajouter</button></form>'
     + '<h3 style="margin-bottom:6px">Sujets de la Gazette</h3><div>' + topics.map(function(t){ return '<div class="list-line"><span>' + h(t) + '</span><button type="button" class="mini" data-act="del-topic" data-t="' + h(t) + '">Retirer</button></div>'; }).join("") + '</div>'
     + '<form id="fT" class="fgrid" style="margin-top:12px"><div class="field"><label for="tName">Nouveau sujet</label><input id="tName" type="text" required placeholder="Un acteur, une série, un lieu…"></div><button class="btn green" type="submit">Ajouter</button></form>'
-    + '<h3 style="margin:26px 0 6px">Sauvegarde</h3><p style="font-size:13px;color:var(--muted);margin-bottom:10px">Télécharge une copie de toutes tes données, ou importe une sauvegarde.</p><div class="row"><button type="button" class="btn light" data-act="export">Télécharger</button><label class="btn light" style="display:inline-flex;align-items:center;cursor:pointer">Importer<input type="file" id="impFile" accept="application/json,.json" class="sr"></label></div>'
+    + '<h3 style="margin:26px 0 6px">Sauvegarde</h3><p style="font-size:13px;color:var(--muted);margin-bottom:10px">Télécharge une copie de toutes tes données, ou importe une sauvegarde.</p><div class="bk-row"><button type="button" class="btn light" data-act="export">Télécharger</button><button type="button" class="btn light" data-act="import">Importer</button><input type="file" id="impFile" accept="application/json,.json" hidden></div>'
     + '<div style="margin-top:26px"><button type="button" class="mini" data-act="signout">Se déconnecter</button></div>';
 }
 function mountSettings(){
@@ -1034,6 +1036,7 @@ document.addEventListener("click", function(e){
   if (act === "settings"){ openSheet("Réglages", settingsHTML(), mountSettings); return; }
   if (act === "gcal-connect"){ if (mcp && mcp.connect) mcp.connect().then(function(){ toast("Google Agenda est synchronisé."); }).catch(function(){ toast(navigator.onLine ? "La connexion à Google Agenda n'a pas abouti." : "Pas de connexion internet pour l'instant."); }); return; }
   if (act === "export"){ exportBackup(); return; }
+  if (act === "import"){ var fi = document.getElementById("impFile"); if (fi) fi.click(); return; }
   if (act === "signout"){ if (window.APP_SIGNOUT) window.APP_SIGNOUT(); return; }
   if (act === "topic"){ S.topicFilter = b.dataset.t; render(); return; }
   if (act === "acc-sec"){ S.accSection = b.dataset.s; try { localStorage.setItem("accSection", S.accSection); } catch(err){} var sx = document.querySelector(".bubbles-wrap"), keep = sx ? sx.scrollLeft : 0; render(); var nx2 = document.querySelector(".bubbles-wrap"); if (nx2) nx2.scrollLeft = keep; var pb = document.querySelector('.bubble[data-s="' + S.accSection + '"]'); if (pb) pb.focus({preventScroll:true}); return; }
