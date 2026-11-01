@@ -188,8 +188,9 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 .btn-ink{min-height:44px;padding:9px 16px;border-radius:999px;border:0;background:var(--ink);color:#FFFDF8;font-size:14px;font-weight:800}
 
 /* Anniversaires */
-.bday{display:flex;align-items:center;gap:14px;padding:12px 14px;width:100%;border:0;background:transparent;text-align:left;font:inherit;color:inherit}
-.bday .edit{margin-left:auto;flex-shrink:0;width:44px;height:44px;margin-right:-8px;border:0;border-radius:12px;background:transparent;color:var(--ink-soft);display:grid;place-items:center}
+.bday{display:flex;align-items:center;gap:14px;padding:12px 10px 12px 14px;width:100%;box-sizing:border-box;border:0;background:transparent;text-align:left;font:inherit;color:inherit}
+.bday>div{flex:1;min-width:0}
+.bday .edit{margin-left:auto;flex-shrink:0;box-sizing:border-box;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--ink-soft);display:grid;place-items:center}
 .bday .edit:active{background:var(--band)}
 .bday-more{display:block;width:100%;border:0;border-top:1px dashed var(--line);background:transparent;padding:12px;font-size:14px;font-weight:800;color:var(--ink)}
 .bd-date{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px}
