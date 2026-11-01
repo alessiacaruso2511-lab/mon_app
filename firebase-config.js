@@ -3,12 +3,12 @@
    La sécurité vient des règles Firestore (firestore.rules) et de la liste des domaines autorisés. */
 
 export const FIREBASE_CONFIG = {
-  apiKey: "A_REMPLIR",
-  authDomain: "A_REMPLIR.firebaseapp.com",
-  projectId: "A_REMPLIR",
-  storageBucket: "A_REMPLIR.appspot.com",
-  messagingSenderId: "A_REMPLIR",
-  appId: "A_REMPLIR"
+  apiKey: "AIzaSyDcWLPwCRAUu1XusWsOcj7rNaDjNVDzDSI",
+  authDomain: "mon-app-d5e10.firebaseapp.com",
+  projectId: "mon-app-d5e10",
+  storageBucket: "mon-app-d5e10.firebasestorage.app",
+  messagingSenderId: "395052922726",
+  appId: "1:395052922726:web:2ef64f1504c39290a3baa7"
 };
 
 /* ID client OAuth « Application Web » créé dans Google Cloud (étape 3) */
