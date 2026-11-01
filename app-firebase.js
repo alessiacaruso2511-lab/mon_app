@@ -115,17 +115,38 @@ function makeCal(email){
     },
     invalidate: () => watchers.forEach(runWatch),
     /* à appeler depuis un appui sur un bouton : ouvre la fenêtre Google si besoin */
-    connect: async () => {
+    /* à appeler depuis un appui : ouvre la fenêtre Google si besoin.
+       change = true : choisir un autre compte Google */
+    connect: async (change) => {
       await loadGis();
       if (!tokenClient){
-        tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: SCOPE, hint: email, prompt: "",
-          callback: (resp) => { if (resp && resp.access_token){ saveTok(resp.access_token, +resp.expires_in); watchers.forEach(runWatch); if (pending) pending.res(); } else if (pending) pending.rej(err("denied")); pending = null; },
+        tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: SCOPE, prompt: "",
+          callback: (resp) => { if (resp && resp.access_token){ saveTok(resp.access_token, +resp.expires_in); try { localStorage.setItem("gcalConsented", "1"); } catch(e){} watchers.forEach(runWatch); if (pending) pending.res(); } else if (pending) pending.rej(err("denied")); pending = null; },
           error_callback: () => { if (pending) pending.rej(err("denied")); pending = null; } });
       }
-      return new Promise((res, rej) => { pending = { res, rej }; tokenClient.requestAccessToken({ prompt: localStorage.getItem("gcalConsented") ? "" : "consent" }); try { localStorage.setItem("gcalConsented", "1"); } catch(e){} });
+      return new Promise((res, rej) => {
+        pending = { res, rej };
+        const known = localStorage.getItem("gcalConsented");
+        tokenClient.requestAccessToken(change ? { prompt: "select_account consent" } : { prompt: known ? "" : "consent", hint: email });
+      });
     },
-    hasToken: () => !!readTok()
+    hasToken: () => !!readTok(),
+    hasConsented: () => !!localStorage.getItem("gcalConsented"),
+    disconnect: () => {
+      const t = readTok();
+      try { localStorage.removeItem(TOK_KEY); localStorage.removeItem("gcalConsented"); localStorage.removeItem(CACHE_KEY); } catch(e){}
+      if (t && window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(t, () => {});
+      watchers.forEach(w => w.cb({ type: "error", error: err("needs_auth") }));
+    }
   };
+  /* L'accès Google expire toutes les heures : on le renouvelle en silence au premier appui dans l'appli
+     (Google exige un geste de l'utilisateur ; la fenêtre se ferme toute seule puisque l'accord est déjà donné) */
+  let lastTry = 0;
+  document.addEventListener("pointerup", () => {
+    if (readTok() || !localStorage.getItem("gcalConsented") || !navigator.onLine || pending || Date.now() - lastTry < 600000) return;
+    lastTry = Date.now();
+    cal.connect().catch(() => {});
+  }, true);
   /* reprend la main tout seul quand la connexion revient */
   window.addEventListener("online", () => watchers.forEach(runWatch));
   return cal;

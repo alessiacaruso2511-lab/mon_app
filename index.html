@@ -756,6 +756,8 @@ function award(label, stat, xp, skill){
 /* ---------- agenda ---------- */
 function calError(e){
   var c = e && e.code;
+  /* déjà synchronisé une fois : pas de bouton, l'accès se renouvelle tout seul et on garde le dernier agenda affiché */
+  if (c === "needs_auth" && mcp && mcp.hasConsented && mcp.hasConsented()){ S.gcalState = "ok"; S.gcalMsg = ""; render(); return; }
   S.gcalState = c === "needs_auth" ? "auth" : "err";
   S.gcalMsg = c === "needs_auth" ? "" : c === "offline" ? "Pas de connexion : tu vois le dernier agenda enregistré." : c === "denied" ? "Accès à Google Agenda refusé." : "Google Agenda ne répond pas pour l'instant. Réessaie dans un moment.";
   render();
@@ -1000,6 +1002,7 @@ function settingsHTML(){
     + '<form id="fP" class="fgrid" style="margin:12px 0 22px"><div class="field wide"><label for="pName">Prénom</label><input id="pName" type="text" required></div><div class="field"><label for="pEvery">Rythme</label><select id="pEvery"><option value="7">7 jours</option><option value="14" selected>14 jours</option><option value="21">21 jours</option><option value="30">30 jours</option><option value="60">60 jours</option></select></div><button class="btn green" type="submit">Ajouter</button></form>'
     + '<h3 style="margin-bottom:6px">Sujets de la Gazette</h3><div>' + topics.map(function(t){ return '<div class="list-line"><span>' + h(t) + '</span><button type="button" class="mini" data-act="del-topic" data-t="' + h(t) + '">Retirer</button></div>'; }).join("") + '</div>'
     + '<form id="fT" class="fgrid" style="margin-top:12px"><div class="field"><label for="tName">Nouveau sujet</label><input id="tName" type="text" required placeholder="Un acteur, une série, un lieu…"></div><button class="btn green" type="submit">Ajouter</button></form>'
+    + '<h3 style="margin:26px 0 6px">Google Agenda</h3>' + gcalSettingsHTML()
     + '<h3 style="margin:26px 0 6px">Sauvegarde</h3><p style="font-size:13px;color:var(--muted);margin-bottom:10px">Télécharge une copie de toutes tes données, ou importe une sauvegarde.</p><div class="bk-row"><button type="button" class="btn light" data-act="export">Télécharger</button><button type="button" class="btn light" data-act="import">Importer</button><input type="file" id="impFile" accept="application/json,.json" hidden></div>'
     + '<div style="margin-top:26px"><button type="button" class="mini" data-act="signout">Se déconnecter</button></div>';
 }
@@ -1010,6 +1013,12 @@ function mountSettings(){
   if (fb) fb.onsubmit = function(e){ e.preventDefault(); var v = document.getElementById("bdIn").value; saveSettings({birthday: v ? v.slice(5) : null}).then(function(){ toast(v ? "Ton anniversaire est noté." : "Date retirée."); applyMonth(); makeDrift(); render(); }); };
   fp.onsubmit = function(e){ e.preventDefault(); if (!needDb()) return; var n = document.getElementById("pName").value.trim(); if (!n) return; db.collection("people").add({name:cap(n), every:+document.getElementById("pEvery").value, last:null}).then(function(){ toast(cap(n) + " ajouté(e) à tes proches."); setTimeout(refreshSettings, 300); }).catch(dbErr); };
   ft.onsubmit = function(e){ e.preventDefault(); var n = document.getElementById("tName").value.trim(); if (!n) return; var topics = ((S.settings && S.settings.topics) || []).slice(); if (topics.indexOf(n) < 0) topics.push(n); saveSettings({topics:topics}).then(function(){ toast("Sujet ajouté. Il apparaîtra dès qu'il y aura du nouveau."); refreshSettings(); }); };
+}
+function gcalSettingsHTML(){
+  var on = mcp && mcp.hasConsented && mcp.hasConsented();
+  return '<p style="font-size:13px;color:var(--muted);margin-bottom:10px">' + (on ? 'Synchronisé avec l\'agenda ' + h(CAL) + '. L\'accès se renouvelle tout seul.' : 'Pas encore synchronisé.') + '</p>'
+    + (on ? '<div class="bk-row"><button type="button" class="btn light" data-act="gcal-connect">Resynchroniser</button><button type="button" class="btn light" data-act="gcal-change">Changer de compte</button></div><div style="margin-top:8px"><button type="button" class="mini" data-act="gcal-off">Déconnecter Google Agenda</button></div>'
+          : '<button type="button" class="btn green" data-act="gcal-connect" style="width:100%">Synchroniser Google Agenda</button>');
 }
 function exportBackup(){
   var strip = function(arr){ var o = {}; arr.forEach(function(d){ var c = Object.assign({}, d); delete c._id; o[d._id] = c; }); return o; };
@@ -1099,7 +1108,9 @@ document.addEventListener("click", function(e){
   if (act === "month"){ S.monthOffset = 0; S.monthSel = null; openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); return; }
   if (act === "mprev" || act === "mnext"){ S.monthOffset += act === "mnext" ? 1 : -1; document.getElementById("mBody").innerHTML = monthHTML(); return; }
   if (act === "settings"){ openSheet("Réglages", settingsHTML(), mountSettings); return; }
-  if (act === "gcal-connect"){ if (mcp && mcp.connect) mcp.connect().then(function(){ toast("Google Agenda est synchronisé."); }).catch(function(){ toast(navigator.onLine ? "La connexion à Google Agenda n'a pas abouti." : "Pas de connexion internet pour l'instant."); }); return; }
+  if (act === "gcal-change"){ if (mcp && mcp.connect) mcp.connect(true).then(function(){ toast("Compte Google Agenda mis à jour."); refreshSettings(); }).catch(function(){ toast("Le changement de compte n'a pas abouti."); }); return; }
+  if (act === "gcal-off"){ if (mcp && mcp.disconnect){ mcp.disconnect(); S.gcal = []; toast("Google Agenda est déconnecté."); refreshSettings(); } return; }
+  if (act === "gcal-connect"){ if (mcp && mcp.connect) mcp.connect().then(function(){ toast("Google Agenda est synchronisé."); refreshSettings(); }).catch(function(){ toast(navigator.onLine ? "La connexion à Google Agenda n'a pas abouti." : "Pas de connexion internet pour l'instant."); }); return; }
   if (act === "export"){ exportBackup(); return; }
   if (act === "bday-edit"){ bdayEditSheet(id); return; }
   if (act === "bday-all"){ bdayAllSheet(); return; }
