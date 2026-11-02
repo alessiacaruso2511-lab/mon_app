@@ -52,7 +52,7 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 .gcal-btn{margin:8px 12px 4px;display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 24px);min-height:44px;border-radius:6px;border:1.5px dashed var(--ink);background:transparent;color:var(--ink);font-size:14px;font-weight:800}
 
 /* Haut de page */
-.hd{position:relative;container-type:inline-size;height:73.4cqw}
+.hd{position:relative;container-type:inline-size;height:min(73.4vw,411px)}
 .hd-img{position:absolute;left:-5.64cqw;top:0;width:111.3cqw;max-width:none;height:62.1cqw;object-fit:cover;mix-blend-mode:multiply;-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 100%);mask-image:linear-gradient(to bottom,#000 72%,transparent 100%)}
 .hd-title{position:absolute;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
 .hd-title .halo{position:absolute;left:-26px;right:-26px;top:-16px;bottom:-18px;z-index:-1;border-radius:50%}
@@ -412,6 +412,15 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
 .levelup{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(40,30,20,.45);padding:24px}
 .levelup .box2{background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:28px 24px;text-align:center;max-width:340px;display:flex;flex-direction:column;gap:10px;align-items:center;animation:pop .45s ease-out;box-shadow:0 30px 60px rgba(40,28,18,.35)}
 .levelup h2{font-size:40px}
+
+/* ordinateur : l'éditeur de notes garde une largeur de lecture confortable */
+@media (min-width:760px){
+  .note-editor .ne-scroll{padding-inline:max(20px,calc(50% - 360px))}
+  .note-editor .ne-top{padding-inline:max(8px,calc(50% - 380px))}
+  .note-editor .ne-bar{padding-inline:max(8px,calc(50% - 300px))}
+  .note-editor .ne-pop{left:50%;right:auto;width:min(100%,720px);transform:translateX(-50%);border-radius:16px 16px 0 0}
+  #app{box-shadow:0 0 60px rgba(60,40,20,.08)}
+}
 </style>
 </head>
 <body>
@@ -1949,6 +1958,21 @@ function route(){
     location.hash = TABS[i];
   }, {passive:true});
 })();
+/* ordinateur : flèches gauche / droite du clavier pour changer de page */
+document.addEventListener("keydown", function(e){
+  if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (document.querySelector(".sheet-wrap,.levelup,.note-editor,.draw-pad")) return;
+  var a = document.activeElement; if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+  var i = TABS.indexOf(S.view) + (e.key === "ArrowRight" ? 1 : -1);
+  if (i >= 0 && i < TABS.length){ e.preventDefault(); location.hash = TABS[i]; }
+});
+/* ordinateur : la molette fait défiler les rangées de bulles horizontalement */
+document.addEventListener("wheel", function(e){
+  var w = e.target.closest && e.target.closest(".bubbles-wrap,.topics,.nfolders");
+  if (!w || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  var sc = w.scrollWidth > w.clientWidth ? w : w.querySelector("*"); if (!sc || sc.scrollWidth <= sc.clientWidth) return;
+  e.preventDefault(); sc.scrollLeft += e.deltaY;
+}, {passive:false});
 /* dictée vocale dans la barre d'ajout */
 (function(){
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition, btn = document.getElementById("micBtn");
