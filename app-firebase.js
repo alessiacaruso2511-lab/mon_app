@@ -177,14 +177,45 @@ onAuthStateChanged(auth, async (user) => {
   window.startData(makeDb(user.uid), makeCal(user.email));
 });
 
-/* ---------- hors connexion : l'appli se met en cache ---------- */
-if ("serviceWorker" in navigator){
-  /* Quand une nouvelle version est en ligne, elle s'installe en arrière-plan puis l'appli se recharge une fois toute seule */
+/* ---------- écran de lancement ----------
+   À chaque ouverture : logo + roue de chargement, pendant qu'on vérifie s'il y a une nouvelle version
+   et qu'on charge les données. Une fois l'appli affichée, plus aucune mise à jour ni rechargement. */
+const splash = document.getElementById("splash"), t0 = Date.now();
+let splashOpen = !!splash;
+function hideSplash(){
+  if (!splashOpen) return; splashOpen = false;
+  setTimeout(() => { splash.classList.add("out"); setTimeout(() => splash.remove(), 400); }, Math.max(0, 900 - (Date.now() - t0)));
+}
+const timeout = (ms) => new Promise((r) => setTimeout(r, ms));
+const appReady = new Promise((resolve) => {
+  window.addEventListener("carnet-ready", resolve, { once: true });
+  new MutationObserver(() => { if (!gate.hidden) resolve(); }).observe(gate, { attributes: true, attributeFilter: ["hidden"] });
+});
+
+/* nouvelle version : cherchée seulement pendant l'écran de lancement */
+function checkUpdate(){
+  if (!("serviceWorker" in navigator)) return Promise.resolve();
   const hadController = !!navigator.serviceWorker.controller;
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController && !reloaded){ reloaded = true; location.reload(); } });
-  navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((reg) => {
-    /* vérifie aussi quand l'appli revient au premier plan (elle peut rester ouverte des jours sur un téléphone) */
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); });
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    /* la nouvelle version ne recharge l'appli que si l'écran de lancement est encore là */
+    if (!hadController || !splashOpen) return;
+    let last = 0; try { last = +sessionStorage.getItem("carnet-upd") || 0; } catch(e){}
+    if (Date.now() - last < 20000) return;
+    try { sessionStorage.setItem("carnet-upd", String(Date.now())); } catch(e){}
+    location.reload();
+  });
+  return navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((reg) => {
+    if (!hadController || !navigator.onLine) return;
+    return reg.update().then(() => {
+      const w = reg.installing || reg.waiting;
+      if (!w) return;
+      /* une nouvelle version s'installe : on attend qu'elle soit prête (l'appli se recharge derrière le logo) */
+      return new Promise((resolve) => { w.addEventListener("statechange", () => { if (w.state === "activated" || w.state === "redundant") resolve(); }); });
+    });
   }).catch(() => {});
 }
+Promise.all([
+  Promise.race([checkUpdate(), timeout(6000)]),
+  Promise.race([appReady, timeout(8000)])
+]).then(() => setTimeout(hideSplash, 150));
+setTimeout(hideSplash, 12000);
