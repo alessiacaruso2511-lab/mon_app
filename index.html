@@ -907,17 +907,28 @@ function watchCal(){
     else calError(ev.error);
   }, {refetchInterval: 300000});
 }
-function reminders(time){
-  var r = [20160, 10080, 1440];
-  if (time){ var p = time.split(":"), mins = (+p[0])*60 + (+p[1]||0); if (mins - 480 > 90) r.push(mins - 480); r.push(60); }
+function reminders(time, date, rappel){
+  var r = rappel ? [0] : [20160, 10080, 1440];
+  if (time && !rappel){ var p = time.split(":"), mins = (+p[0])*60 + (+p[1]||0); if (mins - 480 > 90) r.push(mins - 480); r.push(60); }
+  if (date && time){
+    var q = time.split(":"), start = new Date(+date.slice(0,4), +date.slice(5,7)-1, +date.slice(8,10), +q[0], +q[1]||0).getTime(), now = Date.now();
+    r = r.filter(function(m){ return start - m*60000 > now + 30000; });
+    if (!r.length && start > now) r = [0];
+  }
   return r.map(function(m){ return {method:"popup", minutes:m}; });
+}
+function remindersText(r){
+  var labels = {20160:"J-14",10080:"J-7",1440:"la veille",60:"1 h avant",0:"à l'heure pile"};
+  var l = r.map(function(x){ return labels[x.minutes] || (x.minutes > 60 ? "le matin" : x.minutes + " min avant"); });
+  if (!l.length) return "";
+  return (l.length > 1 ? "Rappels " : "Rappel ") + (l.length > 1 ? l.slice(0,-1).join(", ") + " et " + l[l.length-1] : l[0]) + ".";
 }
 function endOf(date, time){ var p = time.split(":"); var d = new Date(+date.slice(0,4), +date.slice(5,7)-1, +date.slice(8,10), +p[0], +p[1]||0); d.setMinutes(d.getMinutes()+60); return iso(d) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":00"; }
 function createCalEvent(o){
   // o: {title, date, time|null, endTime|null, allDay, yearly}
   if (!mcp) return Promise.reject({code:"not_granted"});
   var input = {calendarId:CAL, summary:o.title};
-  if (o.time){ input.startTime = o.date + "T" + o.time + ":00"; input.endTime = o.endTime ? o.date + "T" + o.endTime + ":00" : endOf(o.date, o.time); input.overrideReminders = reminders(o.time); }
+  if (o.time){ input.startTime = o.date + "T" + o.time + ":00"; input.endTime = o.endTime ? o.date + "T" + o.endTime + ":00" : endOf(o.date, o.time); input.overrideReminders = reminders(o.time, o.date, o.reminder); }
   else { input.allDay = true; input.startTime = o.date + "T00:00:00"; input.endTime = iso(addDays(parseISO(o.date),1)) + "T00:00:00"; input.overrideReminders = [{method:"popup",minutes:19620},{method:"popup",minutes:9540},{method:"popup",minutes:300}]; }
   if (o.yearly) input.recurrenceData = ["RRULE:FREQ=YEARLY"];
   return mcp.callTool(GC, "create_event", input).then(function(r){ try { mcp.invalidate(GC, "list_events"); } catch(e){} return r; });
@@ -971,10 +982,12 @@ function stripWords(text){
     .replace(/\b(le\s+)?\d{1,2}\/\d{1,2}\b/g,"")
     .replace(/\b(ce\s+|cette\s+)?(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)(\s+(prochain|matin|soir|après-midi|apres-midi))?\b/ig,"")
     .replace(/\b(après-demain|apres-demain|demain|aujourd'hui|aujourd’hui|ce soir|ce matin)\b/ig,"")
-    .replace(/\b(à|a|vers|de)?\s*\d{1,2}\s*h\s*(\d{2})?(\s*(à|a|-)\s*\d{1,2}\s*h\s*(\d{2})?)?/ig,"")
+    .replace(/(^|\s)((à|a|vers|de|pour)\s+)?\d{1,2}\s*h\s*(\d{2})?(\s*(à|a|-)\s*\d{1,2}\s*h\s*(\d{2})?)?(?![\wà-ÿ])/ig,"$1")
     .replace(/\brdv\b/ig,"rendez-vous").replace(/\bdoc\b/ig,"docteur")
-    .replace(/^(il faut que je|je dois|faut que je|penser à|penser a|ne pas oublier de|ne pas oublier d')\s*/i,"")
-    .replace(/\s+/g," ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g,"").replace(/\s+(à|a|vers|de|le|la|pour)$/i,"").trim();
+    .replace(/^(je dois|penser à|penser a|ne pas oublier de|ne pas oublier d')\s*/i,"")
+    .replace(/^\s*(peux-tu |tu peux |merci de )?((fais|fait|mets|met|ajoute|cr[ée]e|programme)[- ]moi |(fais|fait|mets|met|ajoute|cr[ée]e|programme) )?(un )?(rappel(?!le)|petit rappel|alarme)\s*/i,"")
+    .replace(/^\s*rappelle[- ]moi\s*/i,"")
+    .replace(/\s+/g," ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g,"").replace(/\s+(à|a|vers|de|le|la|pour)$/i,"").trim().replace(/^.*$/, function(x){ return tidyTitle(x) || x; });
 }
 /* commandes de notes : « crée une note liste de courses avec œufs, lait, farine », « ajoute du beurre à ma liste de courses », « note : … » */
 function splitItems(str, raw){
@@ -1023,6 +1036,18 @@ function parseNoteCmd(text){
 }
 function todoHTML(items){ return '<ul class="todo">' + items.map(function(i){ return '<li data-done="0">' + h(i) + '</li>'; }).join("") + '</ul>'; }
 function textFromHTML(html){ var d = document.createElement("div"); d.innerHTML = html; return noteText(d); }
+/* « pour que je mesure… » → « Mesurer… » (sans IA : on remet le verbe à l'infinitif) */
+var VERB_INF = {fasse:"faire",aille:"aller",prenne:"prendre",appelle:"appeler","achète":"acheter",achete:"acheter",jette:"jeter",mette:"mettre",voie:"voir","écrive":"écrire",ecrive:"écrire",lise:"lire",finisse:"finir",sorte:"sortir",parte:"partir",rende:"rendre","réponde":"répondre",reponde:"répondre",envoie:"envoyer",paie:"payer",paye:"payer",nettoie:"nettoyer",vienne:"venir",dise:"dire",boive:"boire",sois:"être",aie:"avoir",prévienne:"prévenir",previenne:"prévenir",remplisse:"remplir",choisisse:"choisir",rappelle:"rappeler",renouvelle:"renouveler","sèche":"sécher",lève:"lever","pèse":"peser",vende:"vendre",attende:"attendre",descende:"descendre",perde:"perdre",suive:"suivre",vive:"vivre",ouvre:"ouvrir",offre:"offrir"};
+function tidyTitle(t){
+  var x = t.replace(/^\s*(de |d'|d’|que |pour |à |a )/i, "");
+  var m = x.match(/^(pour que je |pour que j['’]|que je |que j['’]|il faut que je |il faut que j['’]|faut que je |faut que j['’])(\S+)(.*)$/i);
+  if (m){
+    var v = m[2].toLowerCase(), inf = VERB_INF[v] || VERB_INF[noAcc(v)];
+    if (!inf && /e$/.test(v) && v.length > 2) inf = v + "r";
+    if (inf) x = inf + m[3];
+  }
+  return x.replace(/\s+/g," ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g,"").trim();
+}
 function localParse(text){
   var nc = parseNoteCmd(text); if (nc) return nc;
   var s = text.toLowerCase().trim(), n = noAcc(s), t = today(), date = null, time = null, endTime = null;
@@ -1057,7 +1082,7 @@ function localParse(text){
     return {kind:"followup", title:title, date: iso(date || addDays(t,1)), person:wf, xp:15, stat:"cha"};
   }
   /* rendez-vous daté */
-  if (date) return {kind:"event", title:title, date:iso(date), time:time, endTime:endTime, xp:0};
+  if (date){ var rappel = /\brappel|\brappelle|fais[- ]moi penser|alarme/.test(n); return {kind:"event", title:title, date:iso(date), time:time, endTime:endTime, xp:0, reminder:rappel}; }
   /* sinon : une quête */
   return {kind:"quest", title:title, steps:questSteps(title), xp:questXP(title), stat:guessStat(s)};
 }
@@ -1084,7 +1109,7 @@ function commit(r){
   if (r.kind === "event"){
     if (!r.date){ r.kind = "quest"; return commit(r); }
     if (!r.time) return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:null})).then(function(){ toast("Noté. Il manque l'heure : touche « À compléter » quand tu la sais."); });
-    return createCalEvent({title:base.title, date:r.date, time:r.time, endTime:r.endTime}).then(function(){ toast("Ajouté à ton agenda. Rappels à J-14, J-7, la veille, le matin et 1 h avant."); }).catch(function(e){
+    return createCalEvent({title:base.title, date:r.date, time:r.time, endTime:r.endTime, reminder:r.reminder}).then(function(){ toast("Ajouté à ton agenda. " + remindersText(reminders(r.time, r.date, r.reminder))); }).catch(function(e){
       toast(calWriteMsg(e)); if (e && (e.code === "server_unavailable" || e.code === "upstream_error")) return;
       return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:r.time, unsynced:true}));
     });
