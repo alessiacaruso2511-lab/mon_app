@@ -1542,6 +1542,17 @@ function openNote(id, preset){
   if (!isNew){ NE.last = collectNote(); NE.sig = JSON.stringify(NE.last); }
   body.addEventListener("input", function(){ updateNeMeta(); queueSave(); keepCaret(); });
   body.addEventListener("keyup", keepCaret);
+  /* toucher le vide sous le texte (ou à côté) ne ferme pas le clavier : le curseur va à la fin */
+  var scr = el.querySelector(".ne-scroll");
+  scr.addEventListener("mousedown", function(e){
+    if (e.target !== scr) return;
+    e.preventDefault();
+    if (e.clientY > body.getBoundingClientRect().bottom - 4 || document.activeElement !== body){
+      body.focus(); var r = document.createRange(); r.selectNodeContents(body); r.collapse(false);
+      var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(r); keepCaret();
+    }
+  });
+  el.querySelector("#neBar").addEventListener("mousedown", function(e){ if (e.target.id === "neBar") e.preventDefault(); });
   body.addEventListener("focus", function(){ setTimeout(keepCaret, 350); });
   title.addEventListener("input", function(){ queueSave(); });
   title.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); body.focus(); } });
