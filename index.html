@@ -862,11 +862,9 @@ function briefingHTML(){
     html = rows.map(function(r){ var it = r.it;
       return '<div class="dstep"><span class="dl' + (r.hour ? " hour" : "") + '">' + h(r.lbl) + '</span><span class="dot" style="border-color:' + it.c + (it.filled && r.hour ? ";background:" + it.c : "") + '"></span><span style="min-width:0"><span class="dt">' + h(it.t) + '</span>' + (it.s || it.act ? '<span class="ds">' + h(it.s || "") + (it.s && it.act ? " · " : "") + (it.act || "") + '</span>' : "") + '</span></div>';
     }).join("");
-    var lastH = timed.length ? +timed[timed.length-1].lbl.split("h")[0] : 0;
-    if (lastH < 19) html += '<div class="dstep"><span class="dl">Soir</span><span class="dot"></span><span class="ds" style="padding-top:1px">Rien d\'autre de prévu</span></div>';
   }
   var dl = (tom ? "Demain · " : "") + cap(JOURS_LONG[day.getDay()]) + " " + day.getDate();
-  return '<section class="section gut" aria-labelledby="bt"><div class="section-head"><h2 id="bt">' + (tom ? "Demain" : "Ma journée") + '</h2><span class="sec-date">' + h(dl) + '</span></div><div class="card day2"><div class="fil" aria-hidden="true"></div>' + html + '</div></section>';
+  return '<section class="section gut" aria-labelledby="bt"><div class="section-head"><h2 id="bt">' + (tom ? "Demain" : "Ma journée") + '</h2><span class="sec-date">' + h(dl) + '</span></div><div class="card day2">' + (rows.length > 1 ? '<div class="fil" aria-hidden="true"></div>' : "") + html + '</div></section>';
 }
 
 function calNotice(){
