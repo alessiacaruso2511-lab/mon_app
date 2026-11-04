@@ -442,6 +442,7 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
 .cp-f .field{margin:0;min-width:0}
 .cp-f .wide{grid-column:1/-1}
 .cap-prev .field input{height:44px}
+.cap-prev textarea{box-sizing:border-box;width:100%;border:1.5px solid var(--line);background:#FFFDF8;border-radius:10px;padding:10px 14px;font:inherit;font-size:16px;line-height:1.4;color:var(--text);resize:vertical}
 .cp-out{font-size:14px;color:var(--muted);line-height:1.4;margin:0}
 .cp-out b{color:var(--text)}
 .cp-act{display:flex;justify-content:flex-end;gap:8px}
@@ -1159,8 +1160,35 @@ function findNoteByTitle(t){
   return live.find(function(n){ return norm(n) === q; }) || live.find(function(n){ var t2 = norm(n); return t2.length >= 3 && q.length >= 3 && (t2.indexOf(q) >= 0 || q.indexOf(t2) >= 0); })
     || live.find(function(n){ var t2 = norm(n).replace(/s\b/g, ""), q2 = q.replace(/s\b/g, ""); return t2.length >= 3 && q2.length >= 3 && (t2.indexOf(q2) >= 0 || q2.indexOf(t2) >= 0); }) || null;
 }
+/* « je voudrais que tu crées une note… », « est-ce que tu peux me faire une note… » → « crées une note… » */
+var POLITE = /^(?:(?:alors|ok|bon|euh|stp|s'il te pla[iî]t|merci)[\s,]+)*(?:(?:est-ce que tu peux|est-ce que tu pourrais|tu peux|tu pourrais|peux-tu|pourrais-tu|je voudrais|je veux|j['’]aimerais|j['’]aimerai|il faudrait|il faut|merci de|n['’]oublie pas de)\s+(?:que tu\s+|qu['’]on\s+)?)?(?:me\s+|m['’])?/i;
+function stripPolite(t){ var x = t, prev; do { prev = x; x = x.replace(POLITE, ""); } while (x !== prev && x); return x || t; }
+/* contenu dicté → lignes de la note : « la tringle devra faire 2 m et que les dimensions… » */
+function noteBodyLines(s){
+  return String(s || "").split(/\s*(?:[.;!?]\s+|\n|\s+et\s+que\s+|\s+et\s+qu['’]\s*)\s*/i)
+    .map(function(l){ return l.replace(/^(?:que|qu['’])\s*/i, "").replace(/[\s,.;:]+$/, "").trim(); })
+    .filter(Boolean).map(cap);
+}
+/* titre trouvé dans le contenu : les sujets des phrases (« La tringle à rideau devra… » → « Tringle à rideau ») */
+var NOTE_VERB = /\s(?:devra|devront|doit|doivent|devait|devaient|fait|font|fera|feront|faisait|faisaient|est|sont|était|étaient|etait|etaient|sera|seront|mesure|mesurent|mesurait|mesuraient|faut|coûte|coute|coûtent|coutent|reste|restent|vaut|valent|a|ont|avait|avaient|=|:)\s/i;
+function noteAutoTitle(lines){
+  var subs = [];
+  lines.forEach(function(l){
+    var m = NOTE_VERB.exec(" " + l + " "); if (!m || m.index < 2) return;
+    var ART = /^(?:(?:le|la|les|mon|ma|mes|notre|nos|un|une|des|du|ce|cette|ces)\s+|l['’]\s*)/i;
+    var sub = (" " + l).slice(0, m.index).trim().replace(/\s+(?:qui|que|qu['’]|dont|où|ou)$/i, "").replace(ART, "");
+    if (sub.split(/\s+/).length > 3){ var parts = sub.split(/\s+(?:pour|de la|du|des|de l['’]|d['’]|de)\s*/i); sub = parts[parts.length - 1].replace(ART, ""); }
+    sub = sub.replace(/^(?:l['’]|d['’])/i, "").trim();
+    if (sub && sub.split(/\s+/).length <= 5 && subs.map(normS).indexOf(normS(sub)) < 0) subs.push(sub);
+  });
+  var t = joinEt(subs.slice(0, 3));
+  return t.length > 60 ? "" : cap(t);
+}
+function freeNote(body){ var lines = noteBodyLines(body); return {kind:"note", title:noteAutoTitle(lines), text:lines.join("\n"), items:[]}; }
 function parseNoteCmd(text){
-  var t = text.trim().replace(/[.!]+$/, ""), m;
+  var t = stripPolite(text.trim().replace(/[.!]+$/, "")), m;
+  /* « note que… », « prends note que… », « noter que… » */
+  if ((m = t.match(/^(?:prends?\s+note|note|noter|retiens|retenir)\s+(?:que\s+|qu['’]\s*)([\s\S]+)$/i))) return freeNote(m[1]);
   /* ajouter à une note existante : « ajoute X à ma liste de courses », « dans idée cadeau ajoute ps5 pour Théo » (avec ou sans « note : » devant) */
   var t0 = t.replace(/^(?:note|noter)\s*:\s*/i, ""), VERB = "(?:ajoute|ajouter|rajoute|rajouter|mets|mettre|met|note|noter|écris|ecris|écrire|ecrire)";
   var mA = t0.match(new RegExp("^(?:dans|à|a|sur)\\s+(?:(?:la|ma|mes|le|mon)\\s+)?(?:note\\s+)?(.+?)\\s*[,:]?\\s+" + VERB + "\\s+([\\s\\S]+)$", "i"));
@@ -1179,9 +1207,19 @@ function parseNoteCmd(text){
   /* note : contenu */
   if ((m = t.match(/^(?:note|noter|idée|idee)\s*:\s*([\s\S]+)/i))) return {kind:"note", title:"", text:cap(m[1].trim()), items:[]};
   /* créer une note / une liste */
-  if ((m = t.match(/^(?:(?:cr[ée]{1,2}r?|cr[ée]e|fais|faire|fait|ouvre|ouvrir|écris|ecris|prends|prendre)\s+)?(?:moi\s+)?(?:une\s+)?(?:nouvelle\s+)?(note|liste)\b\s*([\s\S]*)$/i)) && (/^(?:cr|fai|ouv|écr|ecr|pren|nouv|une)/i.test(t) || /^liste\s/i.test(t))){
-    var word = m[1].toLowerCase(), rest = m[2].trim().replace(/^(?:intitulée|appelée|nommée|qui s'appelle)\s+/i, "");
+  if ((m = t.match(/^(?:(?:cr[ée]{1,2}(?:r|s|z)?|fais|faire|fait|ouvre|ouvrir|écris|ecris|écrire|ecrire|prends|prendre|mets|mettre|ajoute|ajouter|rajoute)[\s-]+)?(?:moi\s+)?(?:une\s+|un\s+)?(?:nouvelle\s+|petite\s+)?(note|liste|mémo|memo|pense-bête)\b\s*([\s\S]*)$/i)) && (/^(?:cr|fai|ouv|écr|ecr|pren|nouv|une|un |met|ajou|rajou|peti)/i.test(t) || /^liste\s/i.test(t))){
+    var word = m[1].toLowerCase(), rest = m[2].trim();
+    /* « … pour noter que X », « … qui dit que X », « … que X » : note libre, titre trouvé dans le contenu */
+    var about = rest.match(/^(?:pour\s+(?:noter|dire|me rappeler|retenir|indiquer|écrire|ecrire|mettre|garder)\s+(?:que\s+|qu['’]\s*)?|(?:qui dit|disant|où je note|ou je note|indiquant|avec le fait)\s+(?:que\s+|qu['’]\s*)?|(?:que|qu['’])\s*)([\s\S]+)$/i);
+    if (about && word !== "liste") return freeNote(about[1]);
+    rest = rest.replace(/^(?:intitulée|intitulé|appelée|appelé|nommée|nommé|qui s['’]appelle|titre|avec le titre|sur)\s+/i, "");
     var sep = rest.match(/^([\s\S]*?)\s*(?:\bavec\b|\bcontenant\b|\bqui contient\b|:|\bpour y mettre\b)\s*([\s\S]*)$/i);
+    if (sep && sep[1].trim().split(/\s+/).length > 6) sep = null;
+    if (!sep && word !== "liste"){
+      var pm2 = rest.match(/^pour\s+([\s\S]+)$/i);
+      if (pm2) return freeNote(pm2[1]);
+      if (rest.split(/\s+/).length > 5) return freeNote(rest);
+    }
     var title = sep ? sep[1].trim() : rest, body = sep ? sep[2].trim() : "";
     if (word === "liste") title = ("Liste " + title).trim();
     title = cap(title.replace(/^(?:de|d')\s*$/i, "").trim()) || (word === "liste" ? "Liste" : "");
@@ -1367,7 +1405,7 @@ function buildFinal(F, text){
     case "note":
       var body = (F.noteBody != null && F.noteBody !== "") ? F.noteBody : (o.kind === "note" ? "" : text.trim());
       var items = F.todo ? splitItems(body) : [];
-      return {kind:"note", title:(F.noteTitle || "").trim(), text:F.todo ? "" : cap(body.trim()), items:items, todo:F.todo};
+      return {kind:"note", title:(F.noteTitle || "").trim(), text:F.todo ? "" : cap(body.replace(/[ \t]+\n/g, "\n").trim()), items:items, todo:F.todo};
     case "contact": return Object.assign({}, o, {title:t || o.title});
     case "followup": return Object.assign({}, o, {title:t || o.title, date:F.date || o.date});
   }
@@ -1411,7 +1449,7 @@ function describe(r){
     case "birthday": return "Anniversaire de " + r.person + (d ? " · " + d : "");
     case "followup": return "Rappel : " + r.title + (d ? " · " + d : "");
     case "quest": return "Nouvelle quête : " + r.title;
-    case "note": return "Nouvelle note" + (r.title ? " « " + r.title + " »" : "") + (r.items && r.items.length ? " · " + r.items.length + " élément" + (r.items.length > 1 ? "s" : "") : r.text ? " : " + r.text.slice(0, 40) + (r.text.length > 40 ? "…" : "") : "");
+    case "note": return "Nouvelle note" + (r.title ? " « " + r.title + " »" : "") + (r.items && r.items.length ? " · " + r.items.length + " élément" + (r.items.length > 1 ? "s" : "") : r.text ? " : " + r.text.replace(/\n/g, " · ").slice(0, 60) + (r.text.length > 60 ? "…" : "") : "");
     case "note-add": return "Ajouté à « " + (r.title || "ta note") + " » : " + r.items.join(", ").slice(0, 60);
     case "exploit": return "+" + (r.xp||15) + " XP en " + (STATS[r.stat] || STATS.sag).n;
     case "contact": return "Lien entretenu" + (r.person ? " avec " + r.person : "") + " · +15 XP";
@@ -1440,7 +1478,7 @@ function commit(r){
   }
   if (r.kind === "note"){
     var nid = db.collection("notes").newId(), now = nowISO();
-    var html = (r.text ? "<div>" + h(r.text) + "</div>" : "") + (r.items && r.items.length ? todoHTML(r.items) : r.todo ? todoHTML([""]) : "");
+    var html = (r.text ? String(r.text).split(/\n/).map(function(l){ return "<div>" + (l.trim() ? h(l) : "<br>") + "</div>"; }).join("") : "") + (r.items && r.items.length ? todoHTML(r.items) : r.todo ? todoHTML([""]) : "");
     return db.collection("notes").doc(nid).set({title:r.title || "", html:html, text:textFromHTML(html), media:[], thumb:null, hasAudio:false, folder:null, bg:"papier", pinned:false, deleted:false, createdAt:now, updatedAt:now}).then(function(){ toast("Note ajoutée dans tes notes."); });
   }
   if (r.kind === "note-add"){
@@ -1509,7 +1547,9 @@ function renderPreview(first){
   if (F.kind === "event") f = cpField("cpCore", "Quoi", F.core, "text", true) + cpField("cpWith", "Avec", F.people, "text", false, "Prénoms") + cpField("cpWhere", "Où", F.place, "text", false, "Lieu") + cpField("cpDate", "Jour", F.date, "date") + cpField("cpTime", "Heure", F.time, "time")
     + '<div class="wide"><p class="cat-lbl">Domaine</p><div class="cat-chips" id="cpCats">' + catChips(F.catManual && F.cat ? F.cat : guessCatPlain(F)) + '</div></div>';
   else if (F.kind === "birthday") f = cpField("cpPerson", "De qui", F.person || F.core, "text", true) + cpField("cpDate", "Date", F.date, "date", true);
-  else if (F.kind === "note") f = cpField("cpNoteTitle", "Titre de la note", F.noteTitle, "text", true, "Sans titre") + cpField("cpNoteBody", F.todo ? "Éléments (séparés par des virgules)" : "Contenu", F.noteBody || (CP.F0.kind === "note" ? "" : CP.text), "text", true);
+  else if (F.kind === "note") f = cpField("cpNoteTitle", "Titre de la note", F.noteTitle, "text", true, "Sans titre")
+    + (F.todo ? cpField("cpNoteBody", "Éléments (séparés par des virgules)", F.noteBody, "text", true)
+      : '<div class="field wide"><label for="cpNoteBody">Contenu</label><textarea id="cpNoteBody" rows="' + Math.min(9, Math.max(2, String(F.noteBody || "").split("\n").reduce(function(a, l){ return a + Math.max(1, Math.ceil(l.length / 34)); }, 0) + 1)) + '">' + h(F.noteBody || "") + '</textarea></div>');
   else if (F.kind === "note-add") f = "";
   else f = cpField("cpCore", "Titre", F.core, "text", true);
   box.innerHTML = '<p class="cp-eyebrow">J\'ai compris' + (CP.learnedBefore ? ' <span class="cp-learned">· d\'après tes corrections</span>' : '') + '</p>'
@@ -1518,8 +1558,8 @@ function renderPreview(first){
     + '<p class="cp-out" id="cpOut" aria-live="polite"></p>'
     + '<div class="cp-act"><button type="button" class="btn-line" data-cp="cancel">Annuler</button><button type="button" class="btn-ink" data-cp="ok">Valider</button></div>';
   updatePreviewOut();
-  box.querySelectorAll("[data-cpk]").forEach(function(b){ b.onclick = function(){ readPreview(); var k = b.dataset.cpk; F.kind = k; if ((k === "event" || k === "birthday") && !F.date) F.date = iso(today()); if (k === "birthday" && !F.person) F.person = F.core; if (k === "note" && !F.noteBody && CP.F0.kind !== "note") F.noteBody = CP.text; renderPreview(false); }; });
-  box.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("input", function(){ readPreview(); updatePreviewOut(); refreshCatChips(); }); inp.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); validatePreview(); } }); });
+  box.querySelectorAll("[data-cpk]").forEach(function(b){ b.onclick = function(){ readPreview(); var k = b.dataset.cpk; F.kind = k; if ((k === "event" || k === "birthday") && !F.date) F.date = iso(today()); if (k === "birthday" && !F.person) F.person = F.core; if (k === "note" && !F.noteBody && CP.F0.kind !== "note"){ var fn = freeNote(stripPolite(CP.text).replace(/^(?:(?:cr[ée]{1,2}(?:r|s|z)?|fais|écris|ecris|prends|mets|ajoute)[\s-]+)?(?:moi\s+)?(?:une\s+)?(?:nouvelle\s+)?note\s*(?:pour\s+(?:noter|dire|retenir)\s+)?(?:que\s+|qu['’]\s*)?/i, "")); F.noteBody = fn.text; if (!F.noteTitle) F.noteTitle = fn.title; F.todo = false; } renderPreview(false); }; });
+  box.querySelectorAll("input,textarea").forEach(function(inp){ inp.addEventListener("input", function(){ readPreview(); updatePreviewOut(); refreshCatChips(); }); if (inp.tagName === "INPUT") inp.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); validatePreview(); } }); });
   box.querySelectorAll("[data-cat]").forEach(function(b){ b.onclick = function(){ readPreview(); F.cat = b.dataset.cat; F.catManual = true; refreshCatChips(); }; });
   box.querySelector('[data-cp="cancel"]').onclick = cancelPreview;
   box.querySelector('[data-cp="ok"]').onclick = validatePreview;
@@ -1544,6 +1584,7 @@ function readPreview(){
 function updatePreviewOut(){
   var out = document.getElementById("cpOut"); if (!out || !CP) return;
   var r = buildFinal(CP.F, CP.text);
+  out.hidden = r.kind === "note";
   out.innerHTML = r.kind === "event" ? '<b>' + h(r.title || "Sans titre") + '</b>' + (r.date ? ' · ' + h(fmtDay(parseISO(r.date))) : "") + (r.place ? '<br>Lieu dans ton agenda : ' + h(r.place) : "")
     : '<b>' + h(describe(r)) + '</b>';
 }
