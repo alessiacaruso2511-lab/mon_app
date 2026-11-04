@@ -92,6 +92,7 @@ function makeCal(email){
       reminders: { useDefault: false, overrides: (a.overrideReminders || []).slice(0,5).map(o => ({ method: "popup", minutes: Math.min(40320, o.minutes) })) } };
     if (a.recurrenceData) body.recurrence = a.recurrenceData;
     if (a.location) body.location = a.location;
+    if (a.colorId) body.colorId = a.colorId;
     const j = await api("POST", "/calendars/" + encodeURIComponent(a.calendarId) + "/events", body);
     return { payload: j };
   }

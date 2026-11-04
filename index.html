@@ -447,6 +447,43 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
 .cp-act{display:flex;justify-content:flex-end;gap:8px}
 .cp-learned{font-size:12px;font-weight:700;color:var(--ink)}
 .learn-sub{font-size:13px;font-weight:800;color:var(--muted);margin:12px 0 4px}
+
+/* Semaine : dates en colonne + rendez-vous en couleur par domaine */
+:root{--c-danse:#E7DDF3;--c-danse-ink:#6B4E93;--c-sante:#DDEBDD;--c-sante-ink:#3F6B47;--c-famille:#F6DCD6;--c-famille-ink:#9A4B3E;--c-admin:#F1E6CF;--c-admin-ink:#7A5420;--c-rappel:#F8E8C6;--c-rappel-ink:#8A6630;--c-neutre:#F6F1E7;--c-neutre-ink:#6E5A48}
+.week2{margin-top:12px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:12px}
+.wsum{font-size:14px;font-weight:800;color:var(--muted);margin:0 2px}
+.wsum span{color:var(--ink)}
+.wday{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:start;padding-top:12px;border-top:1.5px solid var(--line)}
+.wday.first{border-top:0;padding-top:0}
+.wday.past{opacity:.5}
+.wdate{text-align:center;line-height:1;padding-top:4px;color:var(--text)}
+.wdate small{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.wdate b{display:block;font-size:24px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+.wday.today .wdate small,.wday.today .wdate b{color:var(--ink)}
+.wday.today .wdate b::after{content:"";display:block;width:18px;height:3px;border-radius:2px;background:var(--ink);margin:4px auto 0}
+.wday.free{align-items:center}
+.wday.free .wdate b{color:var(--muted)}
+.wfree{margin:0;font-size:14px;font-weight:700;color:var(--muted)}
+.wtoday{margin:0 0 6px 2px;font-size:12px;font-weight:800;color:var(--ink)}
+.wevs{display:flex;flex-direction:column;gap:8px;min-width:0}
+.wev{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:10px;border:0;border-radius:14px;text-align:left;font:inherit;color:inherit}
+button.wev:active{filter:brightness(.97)}
+.wic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(255,255,255,.65)}
+.wtx{min-width:0;display:flex;flex-direction:column}
+.wt{font-weight:800;font-size:14.5px;line-height:1.3;color:var(--text);overflow-wrap:anywhere}
+.wmeta{font-size:12.5px;font-weight:700;margin-top:2px;display:flex;flex-wrap:wrap;gap:2px 10px}
+.wmeta .pin{display:inline-flex;align-items:center;gap:4px}
+.wtm{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;line-height:1.2;color:var(--text);white-space:nowrap}
+.wtm small{display:block;font-size:11px;font-weight:700;opacity:.75}
+.k-danse{background:var(--c-danse);color:var(--c-danse-ink)} .k-sante{background:var(--c-sante);color:var(--c-sante-ink)} .k-famille{background:var(--c-famille);color:var(--c-famille-ink)} .k-admin{background:var(--c-admin);color:var(--c-admin-ink)} .k-rappel{background:var(--c-rappel);color:var(--c-rappel-ink)} .k-neutre{background:var(--c-neutre);color:var(--c-neutre-ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.wlegend{display:flex;flex-wrap:wrap;gap:6px}
+.wlegend span{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px}
+.wev .pill-todo{justify-self:end}
+.cat-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cat-chips button{min-height:34px;padding:5px 11px;border-radius:999px;border:1.5px solid transparent;font-size:12.5px;font-weight:800}
+.cat-chips button[aria-pressed="true"]{border-color:currentColor;box-shadow:0 0 0 2px var(--card) inset}
+.cat-lbl{font-size:13px;font-weight:800;color:var(--muted);margin:0 0 6px}
+.mpanel .wevs{margin-top:8px}
 </style>
 </head>
 <body>
@@ -620,13 +657,66 @@ function unlockedTitles(){
 function nextTitle(){ var o = statXP(), best = null; ["cha","sag","force","dex","int","con"].forEach(function(k){ if (statLevel(o[k]) < 3){ var rest = 160 - o[k]; if (!best || rest < best.rest) best = {k:k, rest:rest}; } }); return best; }
 function activeQuests(){ return S.items.filter(function(i){ return i.kind === "quest" && !i.done; }).sort(function(a,b){ return (a.createdAt||"") < (b.createdAt||"") ? -1 : 1; }); }
 function gcalAll(){ var ids = {}, out = S.gcal.slice(); S.gcal.forEach(function(e){ ids[e.id] = 1; }); Object.keys(S.gcalExtra).forEach(function(k){ S.gcalExtra[k].forEach(function(e){ if (!ids[e.id]){ ids[e.id] = 1; out.push(e); } }); }); return out; }
+/* ---------- domaines des rendez-vous (une couleur chacun, la même dans Google Agenda) ---------- */
+var CATS = {
+  danse:{n:"Danse", color:"1", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>'},
+  sante:{n:"Santé", color:"2", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'},
+  famille:{n:"Proches", color:"4", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>'},
+  admin:{n:"Papiers", color:"6", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>'},
+  rappel:{n:"Rappel", color:"5", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>'},
+  neutre:{n:"Autre", color:null, ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'}
+};
+var CAT_ORDER = ["danse","sante","famille","admin","rappel","neutre"];
+var COLOR_CAT = {"1":"danse","2":"sante","4":"famille","6":"admin","5":"rappel"};
+var CAT_WORDS = [
+  ["danse", /\bdans|la sauce|yoga|pilates|zumba|salsa|bachata|kizomba|stretch|\bsport|muscu|fitness|footing|course a pied|natation|piscine|\bgym\b/],
+  ["sante", /dentiste|medecin|docteur|\bdr\b|\bkine|osteo|ophtalmo|dermato|gyneco|gastro|cardio|orthodont|analyse|prise de sang|\blabo|pharmacie|hopital|clinique|radio|\birm\b|echographie|vaccin|\bpsy|sante|\bveto|veterinaire/],
+  ["admin", /banque|impot|notaire|garage|controle technique|mutuelle|assurance|\bcaf\b|mairie|prefecture|passeport|carte d'identite|permis|\bpret\b|dossier|comptable|urssaf|syndic|facture|agence/],
+  ["famille", /maman|papa|theo|\banniv|apero|\bresto|restaurant|diner|dejeuner|manger|brunch|soiree|famille|copain|copine|\bamis?\b|\bchez\b|\bfete|mariage|bapteme|noel|nouvelles/]
+];
+function guessCat(title, place, people, rappel){
+  var L = learnData(), words = keyWords(title || "");
+  for (var i = L.cats.length - 1; i >= 0; i--) if (kindRuleMatch(L.cats[i], words)) return L.cats[i].c;
+  var n = normS((title || "") + " " + (place || ""));
+  if (/^rappel\b/.test(n)) return "rappel";
+  for (var j = 0; j < CAT_WORDS.length; j++) if (CAT_WORDS[j][1].test(n)) return CAT_WORDS[j][0];
+  if (rappel) return "rappel";
+  if (people && people.length) return "famille";
+  return "neutre";
+}
+/* « Cours de danse (Thaïs + Léa) - Studio La Sauce - 10h » → quoi, avec qui, où */
+function splitTitle(t, loc){
+  var x = String(t || "").trim(), place = "", people = [], hadTime = /\s+-\s+\d{1,2}h(\d{2})?$/i.test(x);
+  x = x.replace(/\s+-\s+\d{1,2}h(\d{2})?$/i, "");
+  var parts = x.split(/\s+-\s+/), l = loc ? String(loc).split(",")[0].trim() : "";
+  if (parts.length >= 2){ var last = parts[parts.length - 1]; if (hadTime || (l && normS(l).indexOf(normS(last)) === 0)){ place = parts.slice(1).join(" - "); x = parts[0]; } }
+  var m = x.match(/^(.*\S)\s*\(([^()]+)\)$/); if (m){ x = m[1]; people = m[2].split(/\s*\+\s*/).filter(Boolean); }
+  if (!place && l) place = l;
+  return {core: x || String(t || ""), people: people, place: place};
+}
+function minsOf(t){ var p = String(t || "0:0").split(":"); return (+p[0]) * 60 + (+p[1] || 0); }
+function joinEt(a){ return a.length > 1 ? a.slice(0, -1).join(", ") + " et " + a[a.length - 1] : (a[0] || ""); }
+var PIN_IC = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+function evCard(e){
+  var p = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place), cat = CATS[e.cat] ? e.cat : "neutre", C = CATS[cat];
+  var meta = (p.place ? '<span class="pin">' + PIN_IC + h(p.place) + '</span>' : "") + (p.people.length ? '<span>avec ' + h(joinEt(p.people)) + '</span>' : "") + (e.note ? '<span>' + h(e.note) + '</span>' : "") + (e.unsynced ? '<span>pas encore dans ton agenda</span>' : "");
+  var tm = e.todo ? '<button type="button" class="pill-todo" data-act="complete-event" data-id="' + h(e.id) + '">Heure ?</button>'
+    : '<span class="wtm">' + (e.time ? h(fmtTime(e.time)) + (e.endTime && minsOf(e.endTime) - minsOf(e.time) !== 60 ? '<small>→ ' + h(fmtTime(e.endTime)) + '</small>' : "") : "Journée") + '</span>';
+  var inner = '<span class="wic">' + C.ic + '</span><span class="wtx"><span class="wt">' + h(p.core) + '</span>' + (meta ? '<span class="wmeta">' + meta + '</span>' : "") + '</span>';
+  var edit = !e.todo && (e.src === "gcal" || e.src === "draft");
+  if (edit) return '<button type="button" class="wev k-' + cat + '" data-act="ev-edit" ' + (e.src === "gcal" ? 'data-gid="' + h(e.gid) + '"' : 'data-id="' + h(e.id) + '"') + ' aria-label="' + h(p.core + (e.time ? ", " + fmtTime(e.time) : "") + ". Modifier") + '">' + inner + tm + '</button>';
+  return '<div class="wev k-' + cat + '">' + inner + tm + '</div>';
+}
 function eventsOn(dIso){
   var all = gcalAll();
-  var list = all.filter(function(e){ return e.date === dIso; }).map(function(e){ return {title:e.title, time:e.time, meta:e.location, src:"gcal", gid:e.id}; });
+  var list = all.filter(function(e){ return e.date === dIso; }).map(function(e){
+    var cat = COLOR_CAT[e.colorId]; if (!cat){ var sp = splitTitle(e.title, e.location); cat = guessCat(sp.core, sp.place, sp.people, e.rappel); }
+    return {title:e.title, time:e.time, endTime:e.endTime, meta:e.location, src:"gcal", gid:e.id, cat:cat, colorId:e.colorId || null};
+  });
   S.items.forEach(function(i){
-    if (i.kind === "event" && i.date === dIso) list.push({title:i.title, time:i.time, todo:!i.time, id:i._id, src:"draft", unsynced:i.unsynced});
-    if (i.kind === "followup" && !i.done && i.date === dIso) list.push({title:i.title, meta:"Prendre des nouvelles", src:"follow"});
-    if (i.kind === "birthday" && i.md && i.md === dIso.slice(5) && !all.some(function(e){ return e.date === dIso && /anniv/i.test(e.title) && e.title.indexOf(i.person||"@@") >= 0; })) list.push({title:"Anniversaire de " + i.person, meta:"Toute la journée", src:"bday"});
+    if (i.kind === "event" && i.date === dIso){ var sp2 = splitTitle(i.title, i.place); list.push({title:i.title, time:i.time, endTime:i.endTime, place:i.place, todo:!i.time, id:i._id, src:"draft", unsynced:i.unsynced, cat:i.cat || guessCat(sp2.core, sp2.place, sp2.people)}); }
+    if (i.kind === "followup" && !i.done && i.date === dIso) list.push({title:i.title, meta:"Prendre des nouvelles", note:"Prendre des nouvelles", src:"follow", cat:"famille"});
+    if (i.kind === "birthday" && i.md && i.md === dIso.slice(5) && !all.some(function(e){ return e.date === dIso && /anniv/i.test(e.title) && e.title.indexOf(i.person||"@@") >= 0; })) list.push({title:"Anniversaire de " + i.person, meta:"Toute la journée", src:"bday", cat:"famille"});
   });
   return list.sort(function(a,b){ return (a.time||"00:00") < (b.time||"00:00") ? -1 : 1; });
 }
@@ -709,17 +799,20 @@ function calNotice(){
 }
 
 function monday(d){ return addDays(d, -((d.getDay() + 6) % 7)); }
+var JOURS_LONG = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 function weekHTML(){
-  var t = today(), m = monday(t), rows = [];
+  var t = today(), m = monday(t), rows = [], count = 0, used = {}, free = [];
   for (var i=0;i<7;i++){
     var d = addDays(m,i), di = iso(d), evs = eventsOn(di), isToday = di === iso(t), past = d < t;
-    var inner = evs.length ? evs.map(function(e){
-      if (e.todo) return '<div class="ev"><div class="ev-body"><span class="ev-t">' + h(e.title) + '</span><button type="button" class="pill-todo" data-act="complete-event" data-id="' + h(e.id) + '">À compléter : l\'heure</button></div>' + evEditBtn(e) + '</div>';
-      return '<div class="ev"><div class="ev-body"><span class="ev-t">' + h(e.title) + '</span><span class="ev-m">' + h([e.time ? fmtTime(e.time) : (e.src==="gcal" ? "Toute la journée" : ""), e.meta].filter(Boolean).join(" · ")) + (e.unsynced ? ' · pas encore dans ton agenda' : '') + '</span></div>' + evEditBtn(e) + '</div>';
-    }).join("") : '<div class="empty-day" aria-hidden="true"><i></i><i></i><i></i></div><span class="sr">Rien de prévu</span>';
-    rows.push('<div class="day' + (isToday ? " today" : "") + (past ? " past" : "") + '"><div class="dband"><span>' + JOURS[d.getDay()].replace(".","") + (isToday ? " · aujourd'hui" : "") + '</span><span>' + d.getDate() + '</span></div>' + inner + '</div>');
+    count += evs.length; evs.forEach(function(e){ used[e.cat || "neutre"] = 1; });
+    var date = '<div class="wdate"><small>' + JOURS[d.getDay()].replace(".","") + '</small><b>' + d.getDate() + '</b></div>';
+    var cls = "wday" + (rows.length === 0 ? " first" : "") + (isToday ? " today" : "") + (past ? " past" : "");
+    if (!evs.length){ if (!past) free.push(JOURS_LONG[d.getDay()]); rows.push('<div class="' + cls + ' free">' + date + '<p class="wfree">Libre</p></div>'); continue; }
+    rows.push('<div class="' + cls + '">' + date + '<div style="min-width:0">' + (isToday ? '<p class="wtoday">Aujourd\'hui</p>' : "") + '<div class="wevs">' + evs.map(evCard).join("") + '</div></div></div>');
   }
-  return '<section class="section gut" aria-labelledby="wk"><div class="section-head"><div style="display:flex;align-items:center;gap:10px"><h2 id="wk">Cette semaine</h2>' + VINE_HEAD + '</div><button type="button" class="link-btn" data-act="month">Voir le mois</button></div><div class="card week">' + calNotice() + rows.join("") + '</div><img class="stk" src="' + stk(S.theme.week) + '" alt="" style="right:4px;bottom:-34px;width:54px;height:54px;transform:rotate(10deg)"></section>';
+  var sum = '<p class="wsum"><span>' + (count ? count + " rendez-vous" : "Aucun rendez-vous") + '</span> cette semaine' + (free.length && count ? " · " + (free.length > 3 ? free.length + " jours libres" : joinEt(free) + " libre" + (free.length > 1 ? "s" : "")) : "") + '</p>';
+  var legend = '<div class="wlegend">' + CAT_ORDER.filter(function(k){ return used[k]; }).map(function(k){ return '<span class="k-' + k + '">' + CATS[k].n + '</span>'; }).join("") + '</div>';
+  return '<section class="section gut" aria-labelledby="wk"><div class="section-head"><div style="display:flex;align-items:center;gap:10px"><h2 id="wk">Cette semaine</h2>' + VINE_HEAD + '</div><button type="button" class="link-btn" data-act="month">Voir le mois</button></div><div class="card week2">' + calNotice() + sum + rows.join("") + (count ? legend : "") + '</div><img class="stk" src="' + stk(S.theme.week) + '" alt="" style="right:4px;bottom:-34px;width:54px;height:54px;transform:rotate(10deg)"></section>';
 }
 
 function questCardHTML(q, big, heading){
@@ -955,7 +1048,8 @@ function normEvents(payload){
   return evs.filter(function(e){ return e.status !== "cancelled"; }).map(function(e){
     var s = e.start || {}, dt = s.dateTime || "", d = dt ? dt.slice(0,10) : (s.date || "");
     var en = e.end || {}, edt = en.dateTime || "";
-    return {id:e.id, title:e.summary || "Sans titre", date:d, time: dt ? dt.slice(11,16) : null, endTime: edt ? edt.slice(11,16) : null, location:e.location || "", allDay:!dt, recurring:!!e.recurringEventId};
+    var ov = e.reminders && !e.reminders.useDefault && e.reminders.overrides || [];
+    return {id:e.id, title:e.summary || "Sans titre", date:d, time: dt ? dt.slice(11,16) : null, endTime: edt ? edt.slice(11,16) : null, location:e.location || "", allDay:!dt, recurring:!!e.recurringEventId, colorId:e.colorId || null, rappel: ov.length === 1 && ov[0].minutes === 0};
   });
 }
 var calRange = null;
@@ -992,6 +1086,7 @@ function createCalEvent(o){
   else { input.allDay = true; input.startTime = o.date + "T00:00:00"; input.endTime = iso(addDays(parseISO(o.date),1)) + "T00:00:00"; input.overrideReminders = [{method:"popup",minutes:19620},{method:"popup",minutes:9540},{method:"popup",minutes:300}]; }
   if (o.yearly) input.recurrenceData = ["RRULE:FREQ=YEARLY"];
   if (o.place) input.location = o.place;
+  if (o.cat && CATS[o.cat] && CATS[o.cat].color) input.colorId = CATS[o.cat].color;
   return mcp.callTool(GC, "create_event", input).then(function(r){ try { mcp.invalidate(GC, "list_events"); } catch(e){} return r; });
 }
 function calWriteMsg(e){
@@ -1227,9 +1322,9 @@ function learnData(){
   var l = (S.settings && S.settings.learn) || {}, removed = l.removed || [], places = {};
   Object.keys(DEFAULT_PLACES).forEach(function(k){ if (removed.indexOf(k) < 0) places[k] = DEFAULT_PLACES[k]; });
   Object.assign(places, l.places || {});
-  return {places:places, kinds:(l.kinds || []).slice(), rewrites:Object.assign({}, l.rewrites || {}), removed:removed.slice()};
+  return {places:places, kinds:(l.kinds || []).slice(), cats:(l.cats || []).slice(), rewrites:Object.assign({}, l.rewrites || {}), removed:removed.slice()};
 }
-function saveLearn(L){ return saveSettings({learn:{places:L.places, kinds:L.kinds.slice(-80), rewrites:L.rewrites, removed:L.removed}}); }
+function saveLearn(L){ return saveSettings({learn:{places:L.places, kinds:L.kinds.slice(-80), cats:(L.cats || []).slice(-80), rewrites:L.rewrites, removed:L.removed}}); }
 function keyWords(t){
   return normS(t).split(/[^a-z0-9']+/).map(function(w){ return w.replace(/^(l|d|j|qu|n|s|m|t)'/, ""); }).filter(function(w){ return w.length >= 3 && !STOPW.test(w) && !/^\d/.test(w); }).slice(0, 3);
 }
@@ -1256,15 +1351,16 @@ function fieldsOf(r, text){
   if (r.kind === "exploit" || r.kind === "contact") core = r.title || "";
   return {kind:r.kind, core:core, people:(r.people || []).join(", "), place:r.place || "", placeRaw:r.placeRaw || null, date:r.date || "", time:r.time || "", endTime:r.endTime || "", reminder:!!r.reminder,
     noteTitle:r.kind === "note" ? (r.title || "") : "", noteBody:r.kind === "note" ? (r.items && r.items.length ? r.items.join(", ") : (r.text || "")) : "", todo:!!(r.todo || (r.items && r.items.length)),
-    person:r.person || "", orig:r};
+    person:r.person || "", cat:r.cat || null, catManual:false, orig:r};
 }
+function guessCatPlain(F){ return guessCat(F.core, F.place, splitPeople(F.people), F.reminder); }
 function splitPeople(v){ return String(v || "").split(/\s*(?:,|\s+et\s+|\+)\s*/).map(function(q){ return q.trim(); }).filter(Boolean).map(personName); }
 function buildFinal(F, text){
   var o = F.orig || {}, t = cap((F.core || "").trim());
   switch (F.kind){
     case "event":
       var ppl = splitPeople(F.people), tm = F.time || null;
-      return {kind:"event", core:t, people:ppl, place:(F.place || "").trim(), title:eventTitle({core:t, people:ppl, place:(F.place || "").trim(), time:tm}), date:F.date || iso(today()), time:tm, endTime: tm && tm === (o.time || null) ? (o.endTime || null) : null, reminder:F.reminder, xp:0};
+      return {kind:"event", core:t, people:ppl, place:(F.place || "").trim(), title:eventTitle({core:t, people:ppl, place:(F.place || "").trim(), time:tm}), date:F.date || iso(today()), time:tm, endTime: tm && tm === (o.time || null) ? (o.endTime || null) : null, reminder:F.reminder, cat: F.catManual && F.cat ? F.cat : guessCatPlain(F), xp:0};
     case "quest": return {kind:"quest", title:t, steps:questSteps(t), xp:questXP(t), stat:guessStat(text)};
     case "exploit": var st = guessStat(text); return {kind:"exploit", title:t, xp:exploitXP(text), stat:st, skill:skillOf(text)};
     case "birthday": return {kind:"birthday", person:cap((F.person || F.core || "").trim()), date:F.date || null, title:"Anniversaire", xp:0};
@@ -1295,6 +1391,10 @@ function learnFrom(F0, F, text){
       }
     }
   }
+  if (F.kind === "event" && F.catManual && F.cat){
+    var wc = keyWords(F.core || F0.core || stripWords(text) || text);
+    if (wc.length && F.cat !== guessCatPlain(F)){ L.cats = L.cats.filter(function(r){ return r.w.join(" ") !== wc.join(" "); }); L.cats.push({w:wc, c:F.cat}); learned.push("domaine"); }
+  }
   if ((F.kind === "event" || F.kind === "quest") && F.kind === F0.kind){
     var a = (F0.core || "").trim(), b = (F.core || "").trim();
     if (a && b && normS(a) !== normS(b) && learned.indexOf("lieu") < 0 && a.length <= 80){ L.rewrites[normS(a)] = b; learned.push("titre"); }
@@ -1324,10 +1424,10 @@ function commit(r){
   var base = {title: cap(r.title || ""), createdAt: nowISO()};
   if (r.kind === "event"){
     if (!r.date){ r.kind = "quest"; return commit(r); }
-    if (!r.time) return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:null})).then(function(){ toast("Noté. Il manque l'heure : touche « À compléter » quand tu la sais."); });
-    return createCalEvent({title:base.title, date:r.date, time:r.time, endTime:r.endTime, reminder:r.reminder, place:r.place || null}).then(function(){ toast("Ajouté à ton agenda. " + remindersText(reminders(r.time, r.date, r.reminder))); }).catch(function(e){
+    if (!r.time) return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:null, place:r.place || null, cat:r.cat || null})).then(function(){ toast("Noté. Il manque l'heure : touche « À compléter » quand tu la sais."); });
+    return createCalEvent({title:base.title, date:r.date, time:r.time, endTime:r.endTime, reminder:r.reminder, place:r.place || null, cat:r.cat || null}).then(function(){ toast("Ajouté à ton agenda. " + remindersText(reminders(r.time, r.date, r.reminder))); }).catch(function(e){
       toast(calWriteMsg(e)); if (e && (e.code === "server_unavailable" || e.code === "upstream_error")) return;
-      return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:r.time, unsynced:true}));
+      return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:r.time, endTime:r.endTime || null, place:r.place || null, cat:r.cat || null, unsynced:true}));
     });
   }
   if (r.kind === "birthday"){
@@ -1406,7 +1506,8 @@ function renderPreview(first){
   if (kinds.indexOf(CP.F0.kind) < 0) kinds.push(CP.F0.kind);
   var chips = kinds.map(function(k){ return '<button type="button" data-cpk="' + k + '" aria-pressed="' + (F.kind === k) + '">' + KIND_LBL[k] + '</button>'; }).join("");
   var f = "";
-  if (F.kind === "event") f = cpField("cpCore", "Quoi", F.core, "text", true) + cpField("cpWith", "Avec", F.people, "text", false, "Prénoms") + cpField("cpWhere", "Où", F.place, "text", false, "Lieu") + cpField("cpDate", "Jour", F.date, "date") + cpField("cpTime", "Heure", F.time, "time");
+  if (F.kind === "event") f = cpField("cpCore", "Quoi", F.core, "text", true) + cpField("cpWith", "Avec", F.people, "text", false, "Prénoms") + cpField("cpWhere", "Où", F.place, "text", false, "Lieu") + cpField("cpDate", "Jour", F.date, "date") + cpField("cpTime", "Heure", F.time, "time")
+    + '<div class="wide"><p class="cat-lbl">Domaine</p><div class="cat-chips" id="cpCats">' + catChips(F.catManual && F.cat ? F.cat : guessCatPlain(F)) + '</div></div>';
   else if (F.kind === "birthday") f = cpField("cpPerson", "De qui", F.person || F.core, "text", true) + cpField("cpDate", "Date", F.date, "date", true);
   else if (F.kind === "note") f = cpField("cpNoteTitle", "Titre de la note", F.noteTitle, "text", true, "Sans titre") + cpField("cpNoteBody", F.todo ? "Éléments (séparés par des virgules)" : "Contenu", F.noteBody || (CP.F0.kind === "note" ? "" : CP.text), "text", true);
   else if (F.kind === "note-add") f = "";
@@ -1418,10 +1519,16 @@ function renderPreview(first){
     + '<div class="cp-act"><button type="button" class="btn-line" data-cp="cancel">Annuler</button><button type="button" class="btn-ink" data-cp="ok">Valider</button></div>';
   updatePreviewOut();
   box.querySelectorAll("[data-cpk]").forEach(function(b){ b.onclick = function(){ readPreview(); var k = b.dataset.cpk; F.kind = k; if ((k === "event" || k === "birthday") && !F.date) F.date = iso(today()); if (k === "birthday" && !F.person) F.person = F.core; if (k === "note" && !F.noteBody && CP.F0.kind !== "note") F.noteBody = CP.text; renderPreview(false); }; });
-  box.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("input", function(){ readPreview(); updatePreviewOut(); }); inp.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); validatePreview(); } }); });
+  box.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("input", function(){ readPreview(); updatePreviewOut(); refreshCatChips(); }); inp.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); validatePreview(); } }); });
+  box.querySelectorAll("[data-cat]").forEach(function(b){ b.onclick = function(){ readPreview(); F.cat = b.dataset.cat; F.catManual = true; refreshCatChips(); }; });
   box.querySelector('[data-cp="cancel"]').onclick = cancelPreview;
   box.querySelector('[data-cp="ok"]').onclick = validatePreview;
   if (first){ var ci = document.getElementById("captureInput"); if (document.activeElement === ci) ci.blur(); setTimeout(function(){ try { box.scrollIntoView({block:"nearest", behavior: REDUCED ? "auto" : "smooth"}); } catch(e){} }, 60); }
+}
+function catChips(cur){ return CAT_ORDER.map(function(k){ return '<button type="button" class="k-' + k + '" data-cat="' + k + '" aria-pressed="' + (k === cur) + '">' + CATS[k].n + '</button>'; }).join(""); }
+function refreshCatChips(){
+  var box = document.getElementById("cpCats"); if (!box || !CP) return; var F = CP.F, cur = F.catManual && F.cat ? F.cat : guessCatPlain(F);
+  box.querySelectorAll("[data-cat]").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.cat === cur)); });
 }
 function readPreview(){
   if (!CP) return; var F = CP.F, v = function(id){ var el = document.getElementById(id); return el ? el.value : null; };
@@ -1490,9 +1597,11 @@ function eventEditSheet(gid, did){
   var it = did ? S.items.find(function(i){ return i._id === did; }) : null;
   if (!g && !it) return;
   var ev = g ? {title:g.title, date:g.date, time:g.time || "", end:g.endTime || "", place:g.location || ""} : {title:it.title, date:it.date, time:it.time || "", end:it.endTime || "", place:it.place || ""};
+  var sp0 = splitTitle(ev.title, ev.place), cat0 = g ? (COLOR_CAT[g.colorId] || guessCat(sp0.core, sp0.place, sp0.people, g.rappel)) : (it.cat || guessCat(sp0.core, sp0.place, sp0.people)), catSel = cat0;
   var note = g && g.recurring ? '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Événement qui se répète : seule cette date sera modifiée.</p>' : "";
   var back = document.getElementById("mBody") ? function(){ openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); } : closeSheet;
-  openSheet("Modifier l'événement", note + '<form id="fEvEdit"><div class="field"><label for="eTitle">Titre</label><input id="eTitle" type="text" required value="' + h(ev.title) + '"></div><div class="field"><label for="eDate">Date</label><input id="eDate" type="date" required value="' + h(ev.date) + '"></div><div class="ev-time"><div class="field"><label for="eStart">Début</label><input id="eStart" type="time" value="' + h(ev.time) + '"></div><div class="field"><label for="eEnd">Fin</label><input id="eEnd" type="time" value="' + h(ev.end) + '"></div></div><p style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Sans heure de début, l\'événement dure toute la journée.</p><div class="field"><label for="ePlace">Lieu</label><input id="ePlace" type="text" value="' + h(ev.place) + '" placeholder="Facultatif"></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="eDel">Supprimer</button></div></form>', function(){
+  openSheet("Modifier l'événement", note + '<form id="fEvEdit"><div class="field"><label for="eTitle">Titre</label><input id="eTitle" type="text" required value="' + h(ev.title) + '"></div><div class="field"><label for="eDate">Date</label><input id="eDate" type="date" required value="' + h(ev.date) + '"></div><div class="ev-time"><div class="field"><label for="eStart">Début</label><input id="eStart" type="time" value="' + h(ev.time) + '"></div><div class="field"><label for="eEnd">Fin</label><input id="eEnd" type="time" value="' + h(ev.end) + '"></div></div><p style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Sans heure de début, l\'événement dure toute la journée.</p><div class="field"><label for="ePlace">Lieu</label><input id="ePlace" type="text" value="' + h(ev.place) + '" placeholder="Facultatif"></div><div class="field"><p class="cat-lbl" style="margin:0">Domaine</p><div class="cat-chips" id="eCats">' + catChips(cat0) + '</div></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="eDel">Supprimer</button></div></form>', function(){
+    document.querySelectorAll("#eCats [data-cat]").forEach(function(b){ b.onclick = function(){ catSel = b.dataset.cat; document.querySelectorAll("#eCats [data-cat]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.cat === catSel)); }); }; });
     document.getElementById("fEvEdit").onsubmit = function(e){
       e.preventDefault();
       var title = cap(document.getElementById("eTitle").value.trim()), date = document.getElementById("eDate").value, start = document.getElementById("eStart").value, end = document.getElementById("eEnd").value, place = document.getElementById("ePlace").value.trim();
@@ -1501,20 +1610,22 @@ function eventEditSheet(gid, did){
       if (start && end && end <= start){ toast("L'heure de fin doit être après le début."); return; }
       if (g){
         var body = {summary:title, location:place};
+        if (catSel !== cat0 || (g.colorId && COLOR_CAT[g.colorId] !== catSel)) body.colorId = CATS[catSel].color || null;
+        if (catSel !== cat0){ var Lc = learnData(), wc = keyWords(sp0.core); if (wc.length){ Lc.cats = Lc.cats.filter(function(r){ return r.w.join(" ") !== wc.join(" "); }); Lc.cats.push({w:wc, c:catSel}); saveLearn(Lc); } }
         if (start){ body.start = {dateTime: date + "T" + start + ":00", timeZone:"Europe/Paris"}; body.end = {dateTime: end ? date + "T" + end + ":00" : endOf(date, start), timeZone:"Europe/Paris"}; }
         else { body.start = {date: date}; body.end = {date: iso(addDays(parseISO(date), 1))}; }
         mcp.callTool(GC, "patch_event", {calendarId:CAL, eventId:gid, body:body}).then(function(){
-          Object.assign(g, {title:title, date:date, time:start || null, endTime:end || null, location:place, allDay:!start});
+          Object.assign(g, {title:title, date:date, time:start || null, endTime:end || null, location:place, allDay:!start}); if ("colorId" in body) g.colorId = body.colorId;
           back(); render(); toast("Événement modifié dans ton agenda."); afterCalChange();
         }).catch(function(er){ toast(calWriteMsg(er).replace(/ : le rendez-vous est gardé dans l'appli\.?|le rendez-vous est gardé dans l'appli\.?/,"").trim() || "La modification n'a pas abouti."); });
         return;
       }
       if (!needDb()) return;
       if (start){
-        createCalEvent({title:title, date:date, time:start, endTime:end || null}).then(function(){ return db.collection("items").doc(did).delete(); }).then(function(){ back(); toast("Ajouté à ton agenda avec tes rappels."); afterCalChange(); })
-          .catch(function(){ db.collection("items").doc(did).update({title:title, date:date, time:start, endTime:end || null, place:place, unsynced:true}).then(function(){ back(); toast("Modifié dans l'appli. Il sera à remettre dans l'agenda quand il sera joignable."); }).catch(dbErr); });
+        createCalEvent({title:title, date:date, time:start, endTime:end || null, place:place || null, cat:catSel}).then(function(){ return db.collection("items").doc(did).delete(); }).then(function(){ back(); toast("Ajouté à ton agenda avec tes rappels."); afterCalChange(); })
+          .catch(function(){ db.collection("items").doc(did).update({title:title, date:date, time:start, endTime:end || null, place:place, cat:catSel, unsynced:true}).then(function(){ back(); toast("Modifié dans l'appli. Il sera à remettre dans l'agenda quand il sera joignable."); }).catch(dbErr); });
       } else {
-        db.collection("items").doc(did).update({title:title, date:date, time:null, endTime:null, place:place}).then(function(){ back(); toast("Événement modifié."); }).catch(dbErr);
+        db.collection("items").doc(did).update({title:title, date:date, time:null, endTime:null, place:place, cat:catSel}).then(function(){ back(); toast("Événement modifié."); }).catch(dbErr);
       }
     };
     document.getElementById("eDel").onclick = function(){
@@ -1545,7 +1656,7 @@ function monthHTML(){
   }
   var sel = parseISO(S.monthSel), selEvs = eventsOn(S.monthSel);
   var panel = '<div class="mpanel"><p class="eyebrow" style="color:var(--muted)">' + h(cap(fmtDay(sel))) + '</p>'
-    + (S.monthLoading[key] ? '<p class="soft-empty" style="padding:0">Je récupère ton agenda…</p>' : selEvs.length ? selEvs.map(evLine).join("") : '<p class="soft-empty" style="padding:0">Rien de prévu ce jour-là.</p>')
+    + (S.monthLoading[key] ? '<p class="soft-empty" style="padding:0">Je récupère ton agenda…</p>' : selEvs.length ? '<div class="wevs">' + selEvs.map(evCard).join("") + '</div>' : '<p class="soft-empty" style="padding:0">Rien de prévu ce jour-là.</p>')
     + (S.monthErr[key] ? '<p class="notice" style="margin:8px 0 0">' + h(S.monthErr[key]) + '</p>' : "") + '</div>';
   return '<div class="row" style="justify-content:space-between"><button type="button" class="btn light" data-act="mprev" aria-label="Mois précédent">‹</button><h3 style="font-size:22px">' + cap(MOIS[m0.getMonth()]) + ' ' + m0.getFullYear() + '</h3><button type="button" class="btn light" data-act="mnext" aria-label="Mois suivant">›</button></div>'
     + '<div class="month">' + cells.join("") + '</div>' + panel;
@@ -1583,6 +1694,7 @@ function learnSettingsHTML(){
     + '<form id="fLp" class="fgrid" style="margin:8px 0 6px"><div class="field"><label for="lpRaw">Quand j\'écris</label><input id="lpRaw" type="text" required placeholder="la sauce"></div><div class="field"><label for="lpVal">C\'est le lieu</label><input id="lpVal" type="text" required placeholder="Studio La Sauce"></div><button class="btn green" type="submit" style="grid-column:1/-1">Ajouter ce lieu</button></form>'
     + '<p class="learn-sub">Types</p>' + (L.kinds.length ? L.kinds.map(function(r, i){ return line("« " + h(r.w.join(" ")) + " » → " + KIND_LBL[r.k], "kind", i); }).join("") : '<p class="soft-empty" style="padding:0">Aucun pour l\'instant.</p>')
     + '<form id="fLk" class="fgrid" style="margin:8px 0 6px"><div class="field"><label for="lkRaw">Quand j\'écris</label><input id="lkRaw" type="text" required placeholder="véto"></div><div class="field"><label for="lkVal">C\'est</label><select id="lkVal">' + opts + '</select></div><button class="btn green" type="submit" style="grid-column:1/-1">Ajouter ce type</button></form>'
+    + (L.cats.length ? '<p class="learn-sub">Domaines (couleurs)</p>' + L.cats.map(function(r, i){ return line("« " + h(r.w.join(" ")) + " » → " + CATS[r.c].n, "cat", i); }).join("") : "")
     + (rk.length ? '<p class="learn-sub">Titres</p>' + rk.map(function(k){ return line("« " + h(k) + " » → " + h(L.rewrites[k]), "rw", k); }).join("") : "");
 }
 function mountLearn(){
@@ -2246,7 +2358,7 @@ document.addEventListener("click", function(e){
   if (act === "del-person"){ db.collection("people").doc(id).delete().then(function(){ setTimeout(refreshSettings, 300); }).catch(dbErr); return; }
   if (act === "learn-del"){ var L = learnData(), t = b.dataset.t, k = b.dataset.k;
     if (t === "place"){ delete L.places[k]; if (DEFAULT_PLACES[k] && L.removed.indexOf(k) < 0) L.removed.push(k); }
-    else if (t === "kind") L.kinds.splice(+k, 1); else if (t === "rw") delete L.rewrites[k];
+    else if (t === "kind") L.kinds.splice(+k, 1); else if (t === "cat") L.cats.splice(+k, 1); else if (t === "rw") delete L.rewrites[k];
     saveLearn(L).then(refreshSettings); return; }
   if (act === "del-topic"){ var t = b.dataset.t, topics = ((S.settings && S.settings.topics) || []).filter(function(x){ return x !== t; }); saveSettings({topics:topics}).then(refreshSettings); return; }
 });
