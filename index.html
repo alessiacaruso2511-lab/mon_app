@@ -430,6 +430,23 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
   .note-editor .ne-pop{left:50%;right:auto;width:min(100%,720px);transform:translateX(-50%);border-radius:16px 16px 0 0}
   #app{box-shadow:0 0 60px rgba(60,40,20,.08)}
 }
+
+/* aperçu de ce que l'appli a compris, avant d'enregistrer */
+.cap-prev{scroll-margin-bottom:calc(110px + env(safe-area-inset-bottom,0px));scroll-margin-top:12px;margin-top:12px;padding:14px;border-radius:18px;background:var(--card);border:1.5px solid var(--line);box-shadow:0 10px 24px rgba(90,60,30,.10);display:flex;flex-direction:column;gap:12px;animation:cpIn .32s cubic-bezier(.16,1,.3,1)}
+@keyframes cpIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.cp-eyebrow{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cp-kinds{display:flex;flex-wrap:wrap;gap:6px}
+.cp-kinds button{min-height:38px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);background:#FFFDF8;font-size:13px;font-weight:800;color:var(--text)}
+.cp-kinds button[aria-pressed="true"]{background:var(--band);border-color:var(--ink);color:var(--ink)}
+.cp-f{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.cp-f .field{margin:0;min-width:0}
+.cp-f .wide{grid-column:1/-1}
+.cap-prev .field input{height:44px}
+.cp-out{font-size:14px;color:var(--muted);line-height:1.4;margin:0}
+.cp-out b{color:var(--text)}
+.cp-act{display:flex;justify-content:flex-end;gap:8px}
+.cp-learned{font-size:12px;font-weight:700;color:var(--ink)}
+.learn-sub{font-size:13px;font-weight:800;color:var(--muted);margin:12px 0 4px}
 </style>
 </head>
 <body>
@@ -974,6 +991,7 @@ function createCalEvent(o){
   if (o.time){ input.startTime = o.date + "T" + o.time + ":00"; input.endTime = o.endTime ? o.date + "T" + o.endTime + ":00" : endOf(o.date, o.time); input.overrideReminders = reminders(o.time, o.date, o.reminder); }
   else { input.allDay = true; input.startTime = o.date + "T00:00:00"; input.endTime = iso(addDays(parseISO(o.date),1)) + "T00:00:00"; input.overrideReminders = [{method:"popup",minutes:19620},{method:"popup",minutes:9540},{method:"popup",minutes:300}]; }
   if (o.yearly) input.recurrenceData = ["RRULE:FREQ=YEARLY"];
+  if (o.place) input.location = o.place;
   return mcp.callTool(GC, "create_event", input).then(function(r){ try { mcp.invalidate(GC, "list_events"); } catch(e){} return r; });
 }
 function calWriteMsg(e){
@@ -1027,9 +1045,9 @@ function stripWords(text){
     .replace(/\b(après-demain|apres-demain|demain|aujourd'hui|aujourd’hui|ce soir|ce matin)\b/ig,"")
     .replace(/(^|\s)((à|a|vers|de|pour)\s+)?\d{1,2}\s*h\s*(\d{2})?(\s*(à|a|-)\s*\d{1,2}\s*h\s*(\d{2})?)?(?![\wà-ÿ])/ig,"$1")
     .replace(/\brdv\b/ig,"rendez-vous").replace(/\bdoc\b/ig,"docteur")
-    .replace(/^(je dois|penser à|penser a|ne pas oublier de|ne pas oublier d')\s*/i,"")
     .replace(/^\s*(peux-tu |tu peux |merci de )?((fais|fait|mets|met|ajoute|cr[ée]e|programme)[- ]moi |(fais|fait|mets|met|ajoute|cr[ée]e|programme) )?(un )?(rappel(?!le)|petit rappel|alarme)\s*/i,"")
     .replace(/^\s*rappelle[- ]moi\s*/i,"")
+    .replace(/^\s*(je dois|penser à|penser a|ne pas oublier de|ne pas oublier d')\s*/i,"")
     .replace(/\s+/g," ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g,"").replace(/\s+(à|a|vers|de|le|la|pour)$/i,"").trim().replace(/^.*$/, function(x){ return tidyTitle(x) || x; });
 }
 /* commandes de notes : « crée une note liste de courses avec œufs, lait, farine », « ajoute du beurre à ma liste de courses », « note : … » */
@@ -1125,11 +1143,153 @@ function localParse(text){
     return {kind:"followup", title:title, date: iso(date || addDays(t,1)), person:wf, xp:15, stat:"cha"};
   }
   /* rendez-vous daté */
-  if (date){ var rappel = /\brappel|\brappelle|fais[- ]moi penser|alarme/.test(n); return {kind:"event", title:title, date:iso(date), time:time, endTime:endTime, xp:0, reminder:rappel}; }
+  if (date){
+    var rappel = /\brappel|\brappelle|fais[- ]moi penser|alarme/.test(n), st2 = splitStructure(stripWords(text) || text);
+    return {kind:"event", core:st2.core, people:st2.people, place:st2.place, placeRaw:st2.placeRaw, title:eventTitle({core:st2.core, people:st2.people, place:st2.place, time:time}), date:iso(date), time:time, endTime:endTime, xp:0, reminder:rappel};
+  }
   /* sinon : une quête */
+  title = rewriteCore(title);
   return {kind:"quest", title:title, steps:questSteps(title), xp:questXP(title), stat:guessStat(s)};
 }
-function understand(text){ return Promise.resolve(localParse(text)); }
+function understand(text){ return Promise.resolve(applyLearnedKind(localParse(text), text)); }
+
+/* ---------- découpage d'un rendez-vous : quoi, avec qui, où ----------
+   « cours de danse à la sauce avec thais et léa » → quoi « Cours de danse », avec « Thaïs, Léa », où « Studio La Sauce » */
+function normS(x){ return noAcc(String(x||"").toLowerCase()).replace(/[’]/g,"'").replace(/\s+/g," ").trim(); }
+function escRe(x){ return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+function personName(p){
+  var k = normS(p), known = (S.people || []).find(function(x){ return normS(x.name) === k; });
+  if (known) return known.name;
+  return p.split(/\s+/).map(cap).join(" ");
+}
+var NOT_PLACE = /^(moins|plus|cas|fois|place|lieu|revoir|main|mieux|pire|total|final|fond|debut|fin|niveau|sujet|propos|bout|cours de|telephone|tel)\b/;
+function splitStructure(raw){
+  var L = learnData(), x = " " + raw.replace(/\s+/g, " ").trim() + " ", people = [], place = null, placeRaw = null;
+  /* avec qui */
+  var pm = x.match(/\s(?:avec)\s+(.+?)(?=\s(?:à|a|au|aux|chez|pour|dans|vers|sur)\s|\s*$)/i);
+  if (pm){
+    var ppl = pm[1].split(/\s*(?:,|\s+et\s+|&|\+)\s*/).map(function(q){ return q.replace(/^(les|la|le|l')\s*/i, "").trim(); }).filter(Boolean);
+    if (ppl.length && ppl.length <= 6 && ppl.every(function(q){ return q.split(/\s+/).length <= 2; })){ people = ppl.map(personName); x = x.replace(pm[0], " "); }
+  }
+  /* où : d'abord les lieux que tu m'as appris */
+  var nx = noAcc(x.toLowerCase()).replace(/[’]/g, "'");
+  if (nx.length === x.length){
+    var keys = Object.keys(L.places).sort(function(a,b){ return b.length - a.length; });
+    for (var i = 0; i < keys.length; i++){
+      var re = new RegExp("\\s(?:(?:a|au|aux|chez|dans|vers)\\s+)?" + escRe(keys[i]) + "(?=\\s)"), m = re.exec(nx);
+      if (m){ place = L.places[keys[i]]; placeRaw = keys[i]; x = x.slice(0, m.index) + " " + x.slice(m.index + m[0].length); break; }
+    }
+  }
+  /* sinon : « chez … », « au … », « à la … », « à Nice » */
+  if (!place){
+    var re2 = /\s(chez|au|aux|à la|a la|à l['’]|a l['’]|à|a)\s*([^\s].*?)(?=\s(?:pour|avec)\s|\s*$)/gi, mm, best = null;
+    while ((mm = re2.exec(x))){
+      var prep = mm[1].toLowerCase(), rest = mm[2].replace(/[\s,.;:-]+$/, ""), words = rest.split(/\s+/), nr = normS(rest);
+      re2.lastIndex = mm.index + 1;
+      if (!rest || words.length > 4 || NOT_PLACE.test(nr)) continue;
+      if (/^(à|a)$/.test(prep) && !/^[A-ZÀ-Ü]/.test(rest)) continue;
+      if (/(er|ir)$/.test(normS(words[0])) && words.length === 1 && !/^[A-ZÀ-Ü]/.test(rest) && prep !== "chez") continue;
+      var before = x.slice(0, mm.index).trim(); if (!before) continue;
+      best = {index:mm.index, len:mm[0].length, prep:prep, rest:rest};
+    }
+    if (best){
+      var art = /^(à la|a la)$/.test(best.prep) ? "la " : /^(à l|a l)/.test(best.prep) ? "l'" : "";
+      placeRaw = normS(art + best.rest);
+      place = best.prep === "chez" ? "Chez " + best.rest : cap(best.rest);
+      x = x.slice(0, best.index) + " " + x.slice(best.index + best.len);
+    }
+  }
+  var core = x.replace(/\s+/g, " ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, "").replace(/\s+(à|a|au|avec|et|de|pour|chez)$/i, "").trim();
+  return {core: rewriteCore(cap(core || raw)), people:people, place:place, placeRaw:placeRaw};
+}
+function eventTitle(f){
+  var ppl = f.people && f.people.length ? " (" + f.people.join(" + ") + ")" : "";
+  return [(f.core || "") + ppl, f.place || "", f.time ? fmtTime(f.time) : ""].filter(function(v){ return v && v.trim(); }).join(" - ");
+}
+
+/* ---------- apprentissage : ce que l'appli retient de tes corrections ---------- */
+var DEFAULT_PLACES = {"la sauce":"Studio La Sauce"};
+var STOPW = /^(le|la|les|un|une|des|du|de|au|aux|et|ou|en|pour|par|avec|sur|dans|chez|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|nos|votre|vos|leur|leurs|je|tu|il|elle|on|nous|vous|ils|elles|me|te|se|que|qui|quoi|rappel|rappelle|moi|penser|faire|fais|fait|aller|bien|tout|tous|plus|tres)$/;
+function learnData(){
+  var l = (S.settings && S.settings.learn) || {}, removed = l.removed || [], places = {};
+  Object.keys(DEFAULT_PLACES).forEach(function(k){ if (removed.indexOf(k) < 0) places[k] = DEFAULT_PLACES[k]; });
+  Object.assign(places, l.places || {});
+  return {places:places, kinds:(l.kinds || []).slice(), rewrites:Object.assign({}, l.rewrites || {}), removed:removed.slice()};
+}
+function saveLearn(L){ return saveSettings({learn:{places:L.places, kinds:L.kinds.slice(-80), rewrites:L.rewrites, removed:L.removed}}); }
+function keyWords(t){
+  return normS(t).split(/[^a-z0-9']+/).map(function(w){ return w.replace(/^(l|d|j|qu|n|s|m|t)'/, ""); }).filter(function(w){ return w.length >= 3 && !STOPW.test(w) && !/^\d/.test(w); }).slice(0, 3);
+}
+function kindRuleMatch(rule, words){
+  var common = rule.w.filter(function(w){ return words.indexOf(w) >= 0; }).length;
+  var score = common + (rule.w[0] && rule.w[0] === words[0] ? 1 : 0);
+  return rule.w.length === 1 ? common === 1 : score >= 2;
+}
+function applyLearnedKind(r, text){
+  if (!r || r.kind === "note-add" || r.kind === "note") return r;
+  var words = keyWords(stripWords(text) || text), L = learnData();
+  for (var i = L.kinds.length - 1; i >= 0; i--){
+    var rule = L.kinds[i];
+    if (rule.k !== r.kind && kindRuleMatch(rule, words)){ var F = fieldsOf(r, text); F.kind = rule.k; if ((rule.k === "event" || rule.k === "birthday") && !F.date) F.date = iso(today()); var out = buildFinal(F, text); out.learned = true; return out; }
+    if (rule.k === r.kind && kindRuleMatch(rule, words)) return r;
+  }
+  return r;
+}
+function rewriteCore(core){ var L = learnData(), k = normS(core); return L.rewrites[k] ? L.rewrites[k] : core; }
+
+/* champs modifiables dans l'aperçu */
+function fieldsOf(r, text){
+  var core = r.core != null ? r.core : (r.kind === "note" ? (r.title || "") : r.kind === "birthday" ? (r.person || "") : (r.title || ""));
+  if (r.kind === "exploit" || r.kind === "contact") core = r.title || "";
+  return {kind:r.kind, core:core, people:(r.people || []).join(", "), place:r.place || "", placeRaw:r.placeRaw || null, date:r.date || "", time:r.time || "", endTime:r.endTime || "", reminder:!!r.reminder,
+    noteTitle:r.kind === "note" ? (r.title || "") : "", noteBody:r.kind === "note" ? (r.items && r.items.length ? r.items.join(", ") : (r.text || "")) : "", todo:!!(r.todo || (r.items && r.items.length)),
+    person:r.person || "", orig:r};
+}
+function splitPeople(v){ return String(v || "").split(/\s*(?:,|\s+et\s+|\+)\s*/).map(function(q){ return q.trim(); }).filter(Boolean).map(personName); }
+function buildFinal(F, text){
+  var o = F.orig || {}, t = cap((F.core || "").trim());
+  switch (F.kind){
+    case "event":
+      var ppl = splitPeople(F.people), tm = F.time || null;
+      return {kind:"event", core:t, people:ppl, place:(F.place || "").trim(), title:eventTitle({core:t, people:ppl, place:(F.place || "").trim(), time:tm}), date:F.date || iso(today()), time:tm, endTime: tm && tm === (o.time || null) ? (o.endTime || null) : null, reminder:F.reminder, xp:0};
+    case "quest": return {kind:"quest", title:t, steps:questSteps(t), xp:questXP(t), stat:guessStat(text)};
+    case "exploit": var st = guessStat(text); return {kind:"exploit", title:t, xp:exploitXP(text), stat:st, skill:skillOf(text)};
+    case "birthday": return {kind:"birthday", person:cap((F.person || F.core || "").trim()), date:F.date || null, title:"Anniversaire", xp:0};
+    case "note":
+      var body = (F.noteBody != null && F.noteBody !== "") ? F.noteBody : (o.kind === "note" ? "" : text.trim());
+      var items = F.todo ? splitItems(body) : [];
+      return {kind:"note", title:(F.noteTitle || "").trim(), text:F.todo ? "" : cap(body.trim()), items:items, todo:F.todo};
+    case "contact": return Object.assign({}, o, {title:t || o.title});
+    case "followup": return Object.assign({}, o, {title:t || o.title, date:F.date || o.date});
+  }
+  return o;
+}
+/* ce que tes corrections m'apprennent */
+function learnFrom(F0, F, text){
+  var L = learnData(), learned = [];
+  if (F.kind !== F0.kind && F.kind !== "note-add" && F0.kind !== "note-add"){
+    var w = keyWords(F0.core || stripWords(text) || text);
+    if (w.length){ L.kinds = L.kinds.filter(function(r){ return r.w.join(" ") !== w.join(" "); }); L.kinds.push({w:w, k:F.kind}); learned.push("type"); }
+  }
+  if (F.kind === "event" && F0.kind === "event"){
+    var p0 = (F0.place || "").trim(), p1 = (F.place || "").trim();
+    if (p1 && p1 !== p0){
+      if (F0.placeRaw){ L.places[F0.placeRaw] = p1; learned.push("lieu"); }
+      else {
+        /* le lieu était resté dans « quoi » : « Cours de danse à la sauce » → « Cours de danse » + lieu */
+        var c0 = normS(F0.core), c1 = normS(F.core);
+        if (c1 && c0.indexOf(c1) === 0){ var rest = c0.slice(c1.length).trim().replace(/^(a|au|aux|chez|dans)\s+/, ""); if (rest && rest.split(" ").length <= 4){ L.places[rest] = p1; learned.push("lieu"); } }
+      }
+    }
+  }
+  if ((F.kind === "event" || F.kind === "quest") && F.kind === F0.kind){
+    var a = (F0.core || "").trim(), b = (F.core || "").trim();
+    if (a && b && normS(a) !== normS(b) && learned.indexOf("lieu") < 0 && a.length <= 80){ L.rewrites[normS(a)] = b; learned.push("titre"); }
+  }
+  if (learned.length) saveLearn(L);
+  return learned;
+}
+
 
 function describe(r){
   var d = r.date ? fmtDay(parseISO(r.date)) : "";
@@ -1152,7 +1312,7 @@ function commit(r){
   if (r.kind === "event"){
     if (!r.date){ r.kind = "quest"; return commit(r); }
     if (!r.time) return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:null})).then(function(){ toast("Noté. Il manque l'heure : touche « À compléter » quand tu la sais."); });
-    return createCalEvent({title:base.title, date:r.date, time:r.time, endTime:r.endTime, reminder:r.reminder}).then(function(){ toast("Ajouté à ton agenda. " + remindersText(reminders(r.time, r.date, r.reminder))); }).catch(function(e){
+    return createCalEvent({title:base.title, date:r.date, time:r.time, endTime:r.endTime, reminder:r.reminder, place:r.place || null}).then(function(){ toast("Ajouté à ton agenda. " + remindersText(reminders(r.time, r.date, r.reminder))); }).catch(function(e){
       toast(calWriteMsg(e)); if (e && (e.code === "server_unavailable" || e.code === "upstream_error")) return;
       return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:r.time, unsynced:true}));
     });
@@ -1207,18 +1367,78 @@ function commit(r){
   return award(base.title, stat, xp, r.skill).then(function(){ toast("Bien joué. +" + xp + " XP en " + STATS[stat].n + "."); burst(window.innerWidth/2, window.innerHeight - 150); });
 }
 
+var KIND_LBL = {event:"Rendez-vous", quest:"Quête", exploit:"Exploit", note:"Note", birthday:"Anniversaire", "note-add":"Ajout à une note", contact:"Lien", followup:"Nouvelles à prendre"};
+var CP = null;
 function onCapture(e){
   e.preventDefault();
-  var input = document.getElementById("captureInput"), btn = document.getElementById("captureBtn"), hint = document.getElementById("captureHint");
+  var input = document.getElementById("captureInput"), hint = document.getElementById("captureHint");
   var text = input.value.trim(); if (!text) return;
   if (!needDb()) return;
-  btn.disabled = true; hint.textContent = "Je range ça…";
   understand(text).then(function(r){
-    btn.disabled = false; input.value = "";
-    var cancelled = false;
-    hint.innerHTML = "<strong>" + h(describe(r)) + "</strong>";
-    toast(describe(r), {ms:3800, undo:function(){ cancelled = true; hint.textContent = "Annulé."; input.value = text; input.focus(); setTimeout(function(){ if (hint.textContent === "Annulé.") hint.textContent = ""; }, 3000); }, after:function(){ if (cancelled) return; Promise.resolve(commit(r)).catch(dbErr).then(function(){ setTimeout(function(){ hint.textContent = ""; }, 4000); }); }});
+    input.value = ""; hint.textContent = "";
+    var F = fieldsOf(r, text);
+    CP = {text:text, F0:Object.assign({}, F), F:F, learnedBefore:!!r.learned};
+    renderPreview(true);
   });
+}
+function cpField(id, label, val, type, wide, ph){
+  return '<div class="field' + (wide ? " wide" : "") + '"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + (type || "text") + '" value="' + h(val || "") + '"' + (ph ? ' placeholder="' + h(ph) + '"' : "") + ' enterkeyhint="done"></div>';
+}
+function renderPreview(first){
+  var form = document.getElementById("captureForm"), box = document.getElementById("capPrev");
+  if (!CP){ if (box) box.remove(); return; }
+  if (!box){ box = document.createElement("div"); box.id = "capPrev"; box.className = "cap-prev"; box.setAttribute("role", "group"); box.setAttribute("aria-label", "Ce que j'ai compris"); form.parentNode.insertBefore(box, form.nextSibling); }
+  else if (!first) box.style.animation = "none";
+  var F = CP.F, kinds = ["event","quest","exploit","note","birthday"];
+  if (kinds.indexOf(CP.F0.kind) < 0) kinds.push(CP.F0.kind);
+  var chips = kinds.map(function(k){ return '<button type="button" data-cpk="' + k + '" aria-pressed="' + (F.kind === k) + '">' + KIND_LBL[k] + '</button>'; }).join("");
+  var f = "";
+  if (F.kind === "event") f = cpField("cpCore", "Quoi", F.core, "text", true) + cpField("cpWith", "Avec", F.people, "text", false, "Prénoms") + cpField("cpWhere", "Où", F.place, "text", false, "Lieu") + cpField("cpDate", "Jour", F.date, "date") + cpField("cpTime", "Heure", F.time, "time");
+  else if (F.kind === "birthday") f = cpField("cpPerson", "De qui", F.person || F.core, "text", true) + cpField("cpDate", "Date", F.date, "date", true);
+  else if (F.kind === "note") f = cpField("cpNoteTitle", "Titre de la note", F.noteTitle, "text", true, "Sans titre") + cpField("cpNoteBody", F.todo ? "Éléments (séparés par des virgules)" : "Contenu", F.noteBody || (CP.F0.kind === "note" ? "" : CP.text), "text", true);
+  else if (F.kind === "note-add") f = "";
+  else f = cpField("cpCore", "Titre", F.core, "text", true);
+  box.innerHTML = '<p class="cp-eyebrow">J\'ai compris' + (CP.learnedBefore ? ' <span class="cp-learned">· d\'après tes corrections</span>' : '') + '</p>'
+    + '<div class="cp-kinds" role="group" aria-label="Type">' + chips + '</div>'
+    + (f ? '<div class="cp-f">' + f + '</div>' : "")
+    + '<p class="cp-out" id="cpOut" aria-live="polite"></p>'
+    + '<div class="cp-act"><button type="button" class="btn-line" data-cp="cancel">Annuler</button><button type="button" class="btn-ink" data-cp="ok">Valider</button></div>';
+  updatePreviewOut();
+  box.querySelectorAll("[data-cpk]").forEach(function(b){ b.onclick = function(){ readPreview(); var k = b.dataset.cpk; F.kind = k; if ((k === "event" || k === "birthday") && !F.date) F.date = iso(today()); if (k === "birthday" && !F.person) F.person = F.core; if (k === "note" && !F.noteBody && CP.F0.kind !== "note") F.noteBody = CP.text; renderPreview(false); }; });
+  box.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("input", function(){ readPreview(); updatePreviewOut(); }); inp.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); validatePreview(); } }); });
+  box.querySelector('[data-cp="cancel"]').onclick = cancelPreview;
+  box.querySelector('[data-cp="ok"]').onclick = validatePreview;
+  if (first){ var ci = document.getElementById("captureInput"); if (document.activeElement === ci) ci.blur(); setTimeout(function(){ try { box.scrollIntoView({block:"nearest", behavior: REDUCED ? "auto" : "smooth"}); } catch(e){} }, 60); }
+}
+function readPreview(){
+  if (!CP) return; var F = CP.F, v = function(id){ var el = document.getElementById(id); return el ? el.value : null; };
+  if (v("cpCore") != null) F.core = v("cpCore");
+  if (v("cpWith") != null) F.people = v("cpWith");
+  if (v("cpWhere") != null) F.place = v("cpWhere");
+  if (v("cpDate") != null) F.date = v("cpDate");
+  if (v("cpTime") != null) F.time = v("cpTime");
+  if (v("cpPerson") != null) F.person = v("cpPerson");
+  if (v("cpNoteTitle") != null) F.noteTitle = v("cpNoteTitle");
+  if (v("cpNoteBody") != null) F.noteBody = v("cpNoteBody");
+}
+function updatePreviewOut(){
+  var out = document.getElementById("cpOut"); if (!out || !CP) return;
+  var r = buildFinal(CP.F, CP.text);
+  out.innerHTML = r.kind === "event" ? '<b>' + h(r.title || "Sans titre") + '</b>' + (r.date ? ' · ' + h(fmtDay(parseISO(r.date))) : "") + (r.place ? '<br>Lieu dans ton agenda : ' + h(r.place) : "")
+    : '<b>' + h(describe(r)) + '</b>';
+}
+function cancelPreview(){
+  var input = document.getElementById("captureInput"); if (CP) input.value = CP.text;
+  CP = null; renderPreview(); input.focus();
+}
+function validatePreview(){
+  if (!CP) return; readPreview();
+  var F = CP.F, text = CP.text, hint = document.getElementById("captureHint");
+  if (F.kind === "event" && !F.date){ var d = document.getElementById("cpDate"); if (d) d.focus(); return; }
+  var r = buildFinal(F, text), learned = learnFrom(CP.F0, F, text);
+  CP = null; renderPreview();
+  if (learned.length){ hint.textContent = "C'est noté, je m'en souviendrai la prochaine fois."; setTimeout(function(){ hint.textContent = ""; }, 4000); }
+  Promise.resolve(commit(r)).catch(dbErr);
 }
 
 /* ---------- fenêtres ---------- */
@@ -1327,6 +1547,7 @@ function settingsHTML(){
     + '<form id="fP" class="fgrid" style="margin:12px 0 22px"><div class="field wide"><label for="pName">Prénom</label><input id="pName" type="text" required></div><div class="field"><label for="pEvery">Rythme</label><select id="pEvery"><option value="7">7 jours</option><option value="14" selected>14 jours</option><option value="21">21 jours</option><option value="30">30 jours</option><option value="60">60 jours</option></select></div><button class="btn green" type="submit">Ajouter</button></form>'
     + '<h3 style="margin-bottom:6px">Sujets de la Gazette</h3><div>' + topics.map(function(t){ return '<div class="list-line"><span>' + h(t) + '</span><button type="button" class="mini" data-act="del-topic" data-t="' + h(t) + '">Retirer</button></div>'; }).join("") + '</div>'
     + '<form id="fT" class="fgrid" style="margin-top:12px"><div class="field"><label for="tName">Nouveau sujet</label><input id="tName" type="text" required placeholder="Un acteur, une série, un lieu…"></div><button class="btn green" type="submit">Ajouter</button></form>'
+    + learnSettingsHTML()
     + '<h3 style="margin:26px 0 6px">Google Agenda</h3>' + gcalSettingsHTML()
     + '<h3 style="margin:26px 0 6px">Sauvegarde</h3><p style="font-size:13px;color:var(--muted);margin-bottom:10px">Télécharge une copie de toutes tes données, ou importe une sauvegarde.</p><div class="bk-row"><button type="button" class="btn light" data-act="export">Télécharger</button><button type="button" class="btn light" data-act="import">Importer</button><input type="file" id="impFile" accept="application/json,.json" hidden></div>'
     + '<div style="margin-top:26px"><button type="button" class="mini" data-act="signout">Se déconnecter</button></div>';
@@ -1337,7 +1558,24 @@ function mountSettings(){
   var fb = document.getElementById("fBd"), fp = document.getElementById("fP"), ft = document.getElementById("fT");
   if (fb) fb.onsubmit = function(e){ e.preventDefault(); var v = document.getElementById("bdIn").value; saveSettings({birthday: v ? v.slice(5) : null}).then(function(){ toast(v ? "Ton anniversaire est noté." : "Date retirée."); applyMonth(); makeDrift(); render(); }); };
   fp.onsubmit = function(e){ e.preventDefault(); if (!needDb()) return; var n = document.getElementById("pName").value.trim(); if (!n) return; db.collection("people").add({name:cap(n), every:+document.getElementById("pEvery").value, last:null}).then(function(){ toast(cap(n) + " ajouté(e) à tes proches."); setTimeout(refreshSettings, 300); }).catch(dbErr); };
+  mountLearn();
   ft.onsubmit = function(e){ e.preventDefault(); var n = document.getElementById("tName").value.trim(); if (!n) return; var topics = ((S.settings && S.settings.topics) || []).slice(); if (topics.indexOf(n) < 0) topics.push(n); saveSettings({topics:topics}).then(function(){ toast("Sujet ajouté. Il apparaîtra dès qu'il y aura du nouveau."); refreshSettings(); }); };
+}
+function learnSettingsHTML(){
+  var L = learnData(), pk = Object.keys(L.places), rk = Object.keys(L.rewrites);
+  var line = function(lbl, t, k){ return '<div class="list-line"><span>' + lbl + '</span><button type="button" class="mini" data-act="learn-del" data-t="' + t + '" data-k="' + h(k) + '">Retirer</button></div>'; };
+  var opts = ["event","quest","exploit","note","birthday"].map(function(k){ return '<option value="' + k + '">' + KIND_LBL[k] + '</option>'; }).join("");
+  return '<h3 style="margin:26px 0 6px">Ce que l\'appli a appris</h3><p style="font-size:13px;color:var(--muted);margin-bottom:6px">Quand tu corriges l\'aperçu avant de valider, l\'appli retient ta correction. Tu peux aussi lui apprendre tes mots ici.</p>'
+    + '<p class="learn-sub">Lieux</p>' + (pk.length ? pk.map(function(k){ return line("« " + h(k) + " » → " + h(L.places[k]), "place", k); }).join("") : '<p class="soft-empty" style="padding:0">Aucun pour l\'instant.</p>')
+    + '<form id="fLp" class="fgrid" style="margin:8px 0 6px"><div class="field"><label for="lpRaw">Quand j\'écris</label><input id="lpRaw" type="text" required placeholder="la sauce"></div><div class="field"><label for="lpVal">C\'est le lieu</label><input id="lpVal" type="text" required placeholder="Studio La Sauce"></div><button class="btn green" type="submit" style="grid-column:1/-1">Ajouter ce lieu</button></form>'
+    + '<p class="learn-sub">Types</p>' + (L.kinds.length ? L.kinds.map(function(r, i){ return line("« " + h(r.w.join(" ")) + " » → " + KIND_LBL[r.k], "kind", i); }).join("") : '<p class="soft-empty" style="padding:0">Aucun pour l\'instant.</p>')
+    + '<form id="fLk" class="fgrid" style="margin:8px 0 6px"><div class="field"><label for="lkRaw">Quand j\'écris</label><input id="lkRaw" type="text" required placeholder="véto"></div><div class="field"><label for="lkVal">C\'est</label><select id="lkVal">' + opts + '</select></div><button class="btn green" type="submit" style="grid-column:1/-1">Ajouter ce type</button></form>'
+    + (rk.length ? '<p class="learn-sub">Titres</p>' + rk.map(function(k){ return line("« " + h(k) + " » → " + h(L.rewrites[k]), "rw", k); }).join("") : "");
+}
+function mountLearn(){
+  var fp = document.getElementById("fLp"), fk = document.getElementById("fLk");
+  if (fp) fp.onsubmit = function(e){ e.preventDefault(); var a = normS(document.getElementById("lpRaw").value).replace(/^(a|au|aux|chez)\s+/, ""), b = document.getElementById("lpVal").value.trim(); if (!a || !b) return; var L = learnData(); L.places[a] = b; saveLearn(L).then(function(){ toast("Lieu appris."); refreshSettings(); }); };
+  if (fk) fk.onsubmit = function(e){ e.preventDefault(); var w = keyWords(document.getElementById("lkRaw").value), k = document.getElementById("lkVal").value; if (!w.length) return; var L = learnData(); L.kinds = L.kinds.filter(function(r){ return r.w.join(" ") !== w.join(" "); }); L.kinds.push({w:w, k:k}); saveLearn(L).then(function(){ toast("Type appris."); refreshSettings(); }); };
 }
 function gcalSettingsHTML(){
   var on = mcp && mcp.hasConsented && mcp.hasConsented();
@@ -1993,6 +2231,10 @@ document.addEventListener("click", function(e){
   if (act === "contacted"){ var p = S.people.find(function(x){ return x._id === id; }); if (!p) return; var rr = b.getBoundingClientRect(); burst(rr.left + 30, rr.top); db.collection("people").doc(id).update({last: iso(today())}).then(function(){ return award("Nouvelles de " + p.name, "cha", 15, "Prendre des nouvelles"); }).then(function(){ toast("Lien entretenu avec " + p.name + ". +15 XP en Liens."); }).catch(dbErr); return; }
   if (act === "follow-done"){ var f = S.items.find(function(i){ return i._id === id; }); if (!f) return; db.collection("items").doc(id).update({done:true}).then(function(){ return award(f.title, "cha", 15, "Prendre des nouvelles"); }).then(function(){ toast("C'est noté. +15 XP en Liens."); }).catch(dbErr); return; }
   if (act === "del-person"){ db.collection("people").doc(id).delete().then(function(){ setTimeout(refreshSettings, 300); }).catch(dbErr); return; }
+  if (act === "learn-del"){ var L = learnData(), t = b.dataset.t, k = b.dataset.k;
+    if (t === "place"){ delete L.places[k]; if (DEFAULT_PLACES[k] && L.removed.indexOf(k) < 0) L.removed.push(k); }
+    else if (t === "kind") L.kinds.splice(+k, 1); else if (t === "rw") delete L.rewrites[k];
+    saveLearn(L).then(refreshSettings); return; }
   if (act === "del-topic"){ var t = b.dataset.t, topics = ((S.settings && S.settings.topics) || []).filter(function(x){ return x !== t; }); saveSettings({topics:topics}).then(refreshSettings); return; }
 });
 document.addEventListener("keydown", function(e){ if (e.key === "Escape") { closeSheet(); var l = document.querySelector(".levelup"); if (l) l.remove(); } });
