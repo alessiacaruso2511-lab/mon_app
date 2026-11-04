@@ -450,7 +450,7 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
 .learn-sub{font-size:13px;font-weight:800;color:var(--muted);margin:12px 0 4px}
 
 /* Semaine : dates en colonne + rendez-vous en couleur par domaine */
-:root{--c-danse:#E7DDF3;--c-danse-ink:#6B4E93;--c-sante:#DDEBDD;--c-sante-ink:#3F6B47;--c-famille:#F6DCD6;--c-famille-ink:#9A4B3E;--c-admin:#F1E6CF;--c-admin-ink:#7A5420;--c-rappel:#F8E8C6;--c-rappel-ink:#8A6630;--c-neutre:#F6F1E7;--c-neutre-ink:#6E5A48}
+:root{--c-danse:#E7DDF3;--c-danse-ink:#6B4E93;--c-sante:#DDEBDD;--c-sante-ink:#3F6B47;--c-famille:#F6DCD6;--c-famille-ink:#9A4B3E;--c-admin:#F8E8C6;--c-admin-ink:#8A6630;--c-rappel:#DCEBF6;--c-rappel-ink:#3D6C8E;--c-neutre:#FFFFFF;--c-neutre-ink:#5A4636}
 .week2{margin-top:12px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:12px}
 .wsum{font-size:14px;font-weight:800;color:var(--muted);margin:0 2px}
 .wsum span{color:var(--ink)}
@@ -476,7 +476,8 @@ button.wev:active{filter:brightness(.97)}
 .wmeta .pin{display:inline-flex;align-items:center;gap:4px}
 .wtm{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;line-height:1.2;color:var(--text);white-space:nowrap}
 .wtm small{display:block;font-size:11px;font-weight:700;opacity:.75}
-.k-danse{background:var(--c-danse);color:var(--c-danse-ink)} .k-sante{background:var(--c-sante);color:var(--c-sante-ink)} .k-famille{background:var(--c-famille);color:var(--c-famille-ink)} .k-admin{background:var(--c-admin);color:var(--c-admin-ink)} .k-rappel{background:var(--c-rappel);color:var(--c-rappel-ink)} .k-neutre{background:var(--c-neutre);color:var(--c-neutre-ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.k-danse{background:var(--c-danse);color:var(--c-danse-ink)} .k-sante{background:var(--c-sante);color:var(--c-sante-ink)} .k-famille{background:var(--c-famille);color:var(--c-famille-ink)} .k-admin{background:var(--c-admin);color:var(--c-admin-ink)} .k-rappel{background:var(--c-rappel);color:var(--c-rappel-ink)} .k-neutre{background:var(--c-neutre);color:var(--c-neutre-ink);outline:1.5px dashed #B9A68C;outline-offset:-1.5px}
+.k-neutre .wic{background:var(--paper)}
 .wlegend{display:flex;flex-wrap:wrap;gap:6px}
 .wlegend span{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px}
 .wev .pill-todo{justify-self:end}
@@ -660,15 +661,17 @@ function activeQuests(){ return S.items.filter(function(i){ return i.kind === "q
 function gcalAll(){ var ids = {}, out = S.gcal.slice(); S.gcal.forEach(function(e){ ids[e.id] = 1; }); Object.keys(S.gcalExtra).forEach(function(k){ S.gcalExtra[k].forEach(function(e){ if (!ids[e.id]){ ids[e.id] = 1; out.push(e); } }); }); return out; }
 /* ---------- domaines des rendez-vous (une couleur chacun, la même dans Google Agenda) ---------- */
 var CATS = {
-  danse:{n:"Danse", color:"1", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>'},
+  danse:{n:"Sport", color:"1", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>'},
   sante:{n:"Santé", color:"2", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'},
   famille:{n:"Proches", color:"4", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>'},
-  admin:{n:"Papiers", color:"6", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>'},
-  rappel:{n:"Rappel", color:"5", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>'},
+  admin:{n:"Papiers", color:"5", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>'},
+  rappel:{n:"Rappel", color:"7", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>'},
   neutre:{n:"Autre", color:null, ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'}
 };
 var CAT_ORDER = ["danse","sante","famille","admin","rappel","neutre"];
-var COLOR_CAT = {"1":"danse","2":"sante","4":"famille","6":"admin","5":"rappel"};
+var COLOR_CAT = {"1":"danse","2":"sante","4":"famille","5":"admin","7":"rappel","6":"admin"};
+/* couleur Google → domaine ; « Banane » posée par l'ancienne palette sur un rappel (notification à l'heure pile) reste un rappel */
+function catFromColor(colorId, rappel){ if (colorId === "5" && rappel) return "rappel"; return COLOR_CAT[colorId]; }
 var CAT_WORDS = [
   ["danse", /\bdans|la sauce|yoga|pilates|zumba|salsa|bachata|kizomba|stretch|\bsport|muscu|fitness|footing|course a pied|natation|piscine|\bgym\b/],
   ["sante", /dentiste|medecin|docteur|\bdr\b|\bkine|osteo|ophtalmo|dermato|gyneco|gastro|cardio|orthodont|analyse|prise de sang|\blabo|pharmacie|hopital|clinique|radio|\birm\b|echographie|vaccin|\bpsy|sante|\bveto|veterinaire/],
@@ -711,7 +714,7 @@ function evCard(e){
 function eventsOn(dIso){
   var all = gcalAll();
   var list = all.filter(function(e){ return e.date === dIso; }).map(function(e){
-    var cat = COLOR_CAT[e.colorId]; if (!cat){ var sp = splitTitle(e.title, e.location); cat = guessCat(sp.core, sp.place, sp.people, e.rappel); }
+    var cat = catFromColor(e.colorId, e.rappel); if (!cat){ var sp = splitTitle(e.title, e.location); cat = guessCat(sp.core, sp.place, sp.people, e.rappel); }
     return {title:e.title, time:e.time, endTime:e.endTime, meta:e.location, src:"gcal", gid:e.id, cat:cat, colorId:e.colorId || null};
   });
   S.items.forEach(function(i){
@@ -1638,7 +1641,7 @@ function eventEditSheet(gid, did){
   var it = did ? S.items.find(function(i){ return i._id === did; }) : null;
   if (!g && !it) return;
   var ev = g ? {title:g.title, date:g.date, time:g.time || "", end:g.endTime || "", place:g.location || ""} : {title:it.title, date:it.date, time:it.time || "", end:it.endTime || "", place:it.place || ""};
-  var sp0 = splitTitle(ev.title, ev.place), cat0 = g ? (COLOR_CAT[g.colorId] || guessCat(sp0.core, sp0.place, sp0.people, g.rappel)) : (it.cat || guessCat(sp0.core, sp0.place, sp0.people)), catSel = cat0;
+  var sp0 = splitTitle(ev.title, ev.place), cat0 = g ? (catFromColor(g.colorId, g.rappel) || guessCat(sp0.core, sp0.place, sp0.people, g.rappel)) : (it.cat || guessCat(sp0.core, sp0.place, sp0.people)), catSel = cat0;
   var note = g && g.recurring ? '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Événement qui se répète : seule cette date sera modifiée.</p>' : "";
   var back = document.getElementById("mBody") ? function(){ openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); } : closeSheet;
   openSheet("Modifier l'événement", note + '<form id="fEvEdit"><div class="field"><label for="eTitle">Titre</label><input id="eTitle" type="text" required value="' + h(ev.title) + '"></div><div class="field"><label for="eDate">Date</label><input id="eDate" type="date" required value="' + h(ev.date) + '"></div><div class="ev-time"><div class="field"><label for="eStart">Début</label><input id="eStart" type="time" value="' + h(ev.time) + '"></div><div class="field"><label for="eEnd">Fin</label><input id="eEnd" type="time" value="' + h(ev.end) + '"></div></div><p style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Sans heure de début, l\'événement dure toute la journée.</p><div class="field"><label for="ePlace">Lieu</label><input id="ePlace" type="text" value="' + h(ev.place) + '" placeholder="Facultatif"></div><div class="field"><p class="cat-lbl" style="margin:0">Domaine</p><div class="cat-chips" id="eCats">' + catChips(cat0) + '</div></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="eDel">Supprimer</button></div></form>', function(){
@@ -1651,7 +1654,7 @@ function eventEditSheet(gid, did){
       if (start && end && end <= start){ toast("L'heure de fin doit être après le début."); return; }
       if (g){
         var body = {summary:title, location:place};
-        if (catSel !== cat0 || (g.colorId && COLOR_CAT[g.colorId] !== catSel)) body.colorId = CATS[catSel].color || null;
+        if (catSel !== cat0 || (g.colorId && (g.colorId !== CATS[catSel].color))) body.colorId = CATS[catSel].color || null;
         if (catSel !== cat0){ var Lc = learnData(), wc = keyWords(sp0.core); if (wc.length){ Lc.cats = Lc.cats.filter(function(r){ return r.w.join(" ") !== wc.join(" "); }); Lc.cats.push({w:wc, c:catSel}); saveLearn(Lc); } }
         if (start){ body.start = {dateTime: date + "T" + start + ":00", timeZone:"Europe/Paris"}; body.end = {dateTime: end ? date + "T" + end + ":00" : endOf(date, start), timeZone:"Europe/Paris"}; }
         else { body.start = {date: date}; body.end = {date: iso(addDays(parseISO(date), 1))}; }
