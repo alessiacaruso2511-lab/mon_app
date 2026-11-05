@@ -1477,7 +1477,9 @@ function learnData(){
   var l = (S.settings && S.settings.learn) || {}, removed = l.removed || [], places = {};
   Object.keys(DEFAULT_PLACES).forEach(function(k){ if (removed.indexOf(k) < 0) places[k] = DEFAULT_PLACES[k]; });
   Object.assign(places, l.places || {});
-  return {places:places, kinds:(l.kinds || []).slice(), cats:(l.cats || []).slice(), rewrites:Object.assign({}, l.rewrites || {}), removed:removed.slice()};
+  /* les règles apprises sur des mots trop généraux (« rendez-vous », « acheter »…) sont nettoyées */
+  var clean = function(list){ return (list || []).map(function(r){ return Object.assign({}, r, {w:(r.w || []).filter(function(w){ return !STOPW.test(w); })}); }).filter(function(r){ return r.w.length; }); };
+  return {places:places, kinds:clean(l.kinds), cats:clean(l.cats), rewrites:Object.assign({}, l.rewrites || {}), removed:removed.slice()};
 }
 function saveLearn(L){ return saveSettings({learn:{places:L.places, kinds:L.kinds.slice(-80), cats:(L.cats || []).slice(-80), rewrites:L.rewrites, removed:L.removed}}); }
 function keyWords(t){
