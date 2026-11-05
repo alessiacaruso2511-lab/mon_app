@@ -753,8 +753,8 @@ function catFromColor(colorId, rappel){ if (colorId === "5" && rappel) return "r
 var CAT_WORDS = [
   ["danse", /\bdans|la sauce|yoga|pilates|zumba|salsa|bachata|kizomba|stretch|\bsport|muscu|fitness|footing|course a pied|natation|piscine|\bgym\b/],
   ["sante", /dentiste|medecin|docteur|\bdr\b|\bkine|osteo|ophtalmo|dermato|gyneco|gastro|cardio|orthodont|analyse|prise de sang|\blabo|pharmacie|hopital|clinique|radio|\birm\b|echographie|vaccin|\bpsy|sante|\bveto|veterinaire/],
-  ["admin", /banque|impot|notaire|garage|controle technique|mutuelle|assurance|\bcaf\b|mairie|prefecture|passeport|carte d'identite|permis|\bpret\b|dossier|comptable|urssaf|syndic|facture|agence/],
-  ["famille", /maman|papa|theo|\banniv|apero|\bresto|restaurant|diner|dejeuner|manger|brunch|soiree|famille|copain|copine|\bamis?\b|\bchez\b|\bfete|mariage|bapteme|noel|nouvelles/]
+  ["admin", /banque|impot|notaire|garage|garagiste|controle technique|mutuelle|assurance|\bcaf\b|mairie|prefecture|passeport|carte d'identite|permis|\bpret\b|dossier|comptable|urssaf|syndic|facture|agence/],
+  ["famille", /maman|papa|theo|\banniv|apero|\bresto|restaurant|diner|dejeuner|manger|brunch|soiree|famille|copain|copine|\bamis?\b|\bchez (?!le\b|la\b|les\b|l'|un\b|une\b|mon\b|ma\b|mes\b|nous\b|moi\b)|\bfete|mariage|bapteme|noel|nouvelles/]
 ];
 function guessCat(title, place, people, rappel){
   var L = learnData(), words = keyWords(title || "");
@@ -1419,7 +1419,7 @@ function understand(text){ return Promise.resolve(applyLearnedKind(localParse(te
 function normS(x){ return noAcc(String(x||"").toLowerCase()).replace(/[’]/g,"'").replace(/\s+/g," ").trim(); }
 function escRe(x){ return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 function personName(p){
-  var k = normS(p), known = (S.people || []).find(function(x){ return normS(x.name) === k; });
+  var k = normS(p).replace(/[-\s]+/g, " "), known = (S.people || []).find(function(x){ return normS(x.name).replace(/[-\s]+/g, " ") === k; });
   if (known) return known.name;
   return p.split(/\s+/).map(cap).join(" ");
 }
@@ -1461,6 +1461,8 @@ function splitStructure(raw){
     }
   }
   var core = x.replace(/\s+/g, " ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, "").replace(/\s+(à|a|au|avec|et|de|pour|chez)$/i, "").trim();
+  var core2 = core.replace(/^(rendez-vous|rdv|rencard)\s+(pour\s+|afin d[e']\s*)?(?=(aller\s+)?\S+(er|ir|re)\b)/i, "").replace(/^(pour\s+)?aller\s+(?=\S+(er|ir|re)\b)/i, "").trim();
+  if (core2 && core2 !== core && core2.split(/\s+/).length >= 1) core = core2;
   return {core: rewriteCore(cap(core || raw)), people:people, place:place, placeRaw:placeRaw};
 }
 function eventTitle(f){
@@ -1470,7 +1472,7 @@ function eventTitle(f){
 
 /* ---------- apprentissage : ce que l'appli retient de tes corrections ---------- */
 var DEFAULT_PLACES = {"la sauce":"Studio La Sauce"};
-var STOPW = /^(le|la|les|un|une|des|du|de|au|aux|et|ou|en|pour|par|avec|sur|dans|chez|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|nos|votre|vos|leur|leurs|je|tu|il|elle|on|nous|vous|ils|elles|me|te|se|que|qui|quoi|rappel|rappelle|moi|penser|faire|fais|fait|aller|bien|tout|tous|plus|tres)$/;
+var STOPW = /^(le|la|les|un|une|des|du|de|au|aux|et|ou|en|pour|par|avec|sur|dans|chez|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|nos|votre|vos|leur|leurs|je|tu|il|elle|on|nous|vous|ils|elles|me|te|se|que|qui|quoi|rappel|rappelle|moi|penser|faire|fais|fait|aller|bien|tout|tous|plus|tres|rendez|vous|rdv|rendez-vous|voir|prendre|acheter|chercher)$/;
 function learnData(){
   var l = (S.settings && S.settings.learn) || {}, removed = l.removed || [], places = {};
   Object.keys(DEFAULT_PLACES).forEach(function(k){ if (removed.indexOf(k) < 0) places[k] = DEFAULT_PLACES[k]; });
