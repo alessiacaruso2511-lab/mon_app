@@ -404,18 +404,25 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
 .btn{border:0;border-radius:10px;padding:11px 16px;font-weight:800;min-height:46px}
 .btn.green{background:var(--ink);color:#FFFDF8}
 .btn.light{background:#FFFDF8;border:1.5px solid var(--line)}
-.month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-block:10px 18px}
-.month .h{font-size:11px;font-weight:800;text-transform:uppercase;text-align:center;color:var(--muted);padding-bottom:4px}
-.mcell{aspect-ratio:1;border:1px solid var(--line);padding:0;border-radius:6px;background:#FFFDF8;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-weight:800;font-variant-numeric:tabular-nums;font-size:14px;max-width:100%}
-.mcell.blank{background:transparent;border:0}
-.mcell.sel{box-shadow:inset 0 0 0 2px var(--ink);background:var(--band)}
-.mcell.today{background:var(--ink);color:#FFFDF8;border-color:var(--ink)}
-.mcell.today.sel{box-shadow:inset 0 0 0 2px #FFFDF8}
-.mpanel{background:var(--card);border:1.5px solid var(--line);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
-.mpanel .ev{padding-top:4px}
-.dots{display:flex;gap:2px;height:5px}
-.dots i{width:5px;height:5px;border-radius:50%;background:var(--ink)}
-.mcell.today .dots i{background:#FFFDF8}
+.month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:4px;margin-block:10px 14px}
+.month .h{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-align:center;color:var(--muted);padding-bottom:4px}
+.mcell{height:48px;border:0;padding:0;background:transparent;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;max-width:100%}
+.mcell .mn{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.mcell.blank{visibility:hidden}
+.mcell.past .mn{color:#B9A68C}
+.mcell.sel .mn{box-shadow:inset 0 0 0 2px var(--ink);color:var(--ink)}
+.mcell.today .mn{background:var(--ink);color:#FFFDF8;box-shadow:none}
+.mcell.today.sel .mn{box-shadow:0 0 0 2px #FFFDF8,0 0 0 4px var(--ink)}
+.mpanel{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px;display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:start}
+.mpanel .wdate{padding-top:4px}
+.msum{margin:2px 0 0;font-size:14px;font-weight:800;color:var(--muted);text-align:center}
+.msum span{color:var(--ink)}
+.dots{display:flex;gap:3px;height:8px}
+.dots{height:9px}
+.dots i{width:9px;height:9px;border-radius:50%;box-sizing:border-box}
+.dots i.k-danse{box-shadow:inset 0 0 0 1.5px #B9A3D6}.dots i.k-sante{box-shadow:inset 0 0 0 1.5px #9EC2A2}.dots i.k-famille{box-shadow:inset 0 0 0 1.5px #DBA59B}.dots i.k-admin{box-shadow:inset 0 0 0 1.5px #D9BE83}.dots i.k-rappel{box-shadow:inset 0 0 0 1.5px #93B8D6}
+.dots i.k-neutre{outline:0;box-shadow:inset 0 0 0 1.5px #B9A68C}
+.mpanel .wdate.today small,.mpanel .wdate.today b{color:var(--ink)}
 .burst{position:fixed;z-index:60;pointer-events:none;width:12px;height:9px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;animation:burst 1.1s ease-out forwards}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .levelup{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(40,30,20,.45);padding:24px}
@@ -1787,17 +1794,20 @@ function monthHTML(){
   if (!S.monthSel || S.monthSel.slice(0,7) !== key) S.monthSel = (monthKey(t) === key) ? iso(t) : iso(m0);
   var lead = (m0.getDay() + 6) % 7, cells = [];
   ["lun","mar","mer","jeu","ven","sam","dim"].forEach(function(d){ cells.push('<div class="h" aria-hidden="true">' + d + '</div>'); });
+  var nEv = 0, nBd = 0;
   for (var i=0;i<lead;i++) cells.push('<div class="mcell blank" aria-hidden="true"></div>');
   for (var d=1; d<=dim; d++){
     var dt = new Date(m0.getFullYear(), m0.getMonth(), d), di = iso(dt), evs = eventsOn(di);
-    var cls = "mcell" + (di === iso(t) ? " today" : "") + (di === S.monthSel ? " sel" : "");
-    cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span>' + d + '</span><span class="dots" aria-hidden="true">' + evs.slice(0,3).map(function(){ return "<i></i>"; }).join("") + '</span></button>');
+    evs.forEach(function(e){ if (e.src === "bday" || /^anniversaire/i.test(e.title)) nBd++; else nEv++; });
+    var cls = "mcell" + (di === iso(t) ? " today" : "") + (di === S.monthSel ? " sel" : "") + (dt < t ? " past" : "");
+    cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="dots" aria-hidden="true">' + evs.slice(0,3).map(function(e){ return '<i class="k-' + (CATS[e.cat] ? e.cat : "neutre") + '"' + (dt < t ? ' style="opacity:.55"' : "") + '></i>'; }).join("") + '</span></button>');
   }
   var sel = parseISO(S.monthSel), selEvs = eventsOn(S.monthSel);
-  var panel = '<div class="mpanel"><p class="eyebrow" style="color:var(--muted)">' + h(cap(fmtDay(sel))) + '</p>'
-    + (S.monthLoading[key] ? '<p class="soft-empty" style="padding:0">Je récupère ton agenda…</p>' : selEvs.length ? '<div class="wevs">' + selEvs.map(evCard).join("") + '</div>' : '<p class="soft-empty" style="padding:0">Rien de prévu ce jour-là.</p>')
-    + (S.monthErr[key] ? '<p class="notice" style="margin:8px 0 0">' + h(S.monthErr[key]) + '</p>' : "") + '</div>';
-  return '<div class="row" style="justify-content:space-between"><button type="button" class="btn light" data-act="mprev" aria-label="Mois précédent">‹</button><h3 style="font-size:22px">' + cap(MOIS[m0.getMonth()]) + ' ' + m0.getFullYear() + '</h3><button type="button" class="btn light" data-act="mnext" aria-label="Mois suivant">›</button></div>'
+  var panel = '<div class="mpanel"><div class="wdate' + (S.monthSel === iso(t) ? " today" : "") + '"><small>' + JOURS[sel.getDay()].replace(".","") + '</small><b>' + sel.getDate() + '</b></div><div style="min-width:0">'
+    + (S.monthLoading[key] ? '<p class="wfree">Je récupère ton agenda…</p>' : selEvs.length ? '<div class="wevs">' + selEvs.map(evCard).join("") + '</div>' : '<p class="wfree" style="padding-top:10px">Libre</p>')
+    + (S.monthErr[key] ? '<p class="notice" style="margin:8px 0 0">' + h(S.monthErr[key]) + '</p>' : "") + '</div></div>';
+  return '<div class="row" style="justify-content:space-between"><button type="button" class="btn light" data-act="mprev" aria-label="Mois précédent">‹</button><h3 style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.01em">' + cap(MOIS[m0.getMonth()]) + ' ' + m0.getFullYear() + '</h3><button type="button" class="btn light" data-act="mnext" aria-label="Mois suivant">›</button></div>'
+    + (nEv || nBd ? '<p class="msum"><span>' + (nEv ? nEv + " rendez-vous" : "") + (nEv && nBd ? "</span> ce mois · " : nEv ? "</span> ce mois" : "") + (nBd ? (nEv ? "" : "<span>") + nBd + " anniversaire" + (nBd > 1 ? "s" : "") + (nEv ? "" : "</span> ce mois") : "") + '</p>' : "")
     + '<div class="month">' + cells.join("") + '</div>' + panel;
 }
 function settingsHTML(){
