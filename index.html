@@ -1234,6 +1234,8 @@ function skillOf(s){ var n = noAcc(s.toLowerCase());
 function stripWords(text){
   return text.replace(/\b(le\s+)?\d{1,2}(er)?\s+(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)\b/ig,"")
     .replace(/\b(le\s+)?\d{1,2}\/\d{1,2}\b/g,"")
+    .replace(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d{1,2}(er)?\b(?!\\s*(?:h\\b|heures?|:|cm|mm|m\\b|m[eè]tres?|€|euros?|ans?\\b|min|kg|g\\b|%|personnes?|fois|x\\b))/ig,"$1")
+    .replace(/\ble\s+\d{1,2}(er)?\b(?!\\s*(?:h\\b|heures?|:|cm|mm|m\\b|m[eè]tres?|€|euros?|ans?\\b|min|kg|g\\b|%|personnes?|fois|x\\b))/ig,"")
     .replace(/\b(ce\s+|cette\s+)?(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)(\s+(prochain|matin|soir|après-midi|apres-midi))?\b/ig,"")
     .replace(/\b(après-demain|apres-demain|demain|aujourd'hui|aujourd’hui|ce soir|ce matin)\b/ig,"")
     .replace(/(^|\s)((à|a|vers|de|pour)\s+)?\d{1,2}\s*(heures?|h|:)\s*(\d{2})?(\s*(à|a|-)\s*\d{1,2}\s*(heures?|h|:)\s*(\d{2})?)?(?![\wà-ÿ])/ig,"$1")
@@ -1341,7 +1343,16 @@ function tidyTitle(t){
   }
   return x.replace(/\s+/g," ").replace(/^[\s,.;:-]+|[\s,.;:-]+$/g,"").trim();
 }
+/* « le onze novembre » → « le 11 novembre » (la dictée écrit parfois les dates en lettres) */
+var NUM_WORDS = ["premier","deux","trois","quatre","cinq","six","sept","huit","neuf","dix","onze","douze","treize","quatorze","quinze","seize","dix-sept","dix-huit","dix-neuf","vingt","vingt-et-un","vingt-deux","vingt-trois","vingt-quatre","vingt-cinq","vingt-six","vingt-sept","vingt-huit","vingt-neuf","trente","trente-et-un"];
+function wordsToDigits(t){
+  return t.replace(/\b(premier|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix(?:[- ](?:sept|huit|neuf))?|onze|douze|treize|quatorze|quinze|seize|vingt(?:[- ](?:et[- ]un|deux|trois|quatre|cinq|six|sept|huit|neuf))?|trente(?:[- ]et[- ]un)?)\s+(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)\b/gi, function(m, w, mo){
+    var k = w.toLowerCase().replace(/ /g, "-").replace("et-un", "et-un"); if (k === "un") k = "premier";
+    var i = NUM_WORDS.indexOf(k); return i >= 0 ? (i + 1) + " " + mo : m;
+  });
+}
 function localParse(text){
+  text = wordsToDigits(text);
   var nc = parseNoteCmd(text); if (nc) return nc;
   var s = text.toLowerCase().trim(), n = noAcc(s), t = today(), date = null, time = null, endTime = null;
   var tm = s.match(/(\d{1,2})\s*(?:heures?|h|:)\s*(\d{2})?(?:\s*(?:à|a|-)\s*(\d{1,2})\s*(?:heures?|h|:)\s*(\d{2})?)?/);
@@ -1358,10 +1369,17 @@ function localParse(text){
   /* « 8h du soir », « 3h de l'après-midi » */
   if (time && +time.slice(0,2) < 12 && /du soir|de l'apres-midi|de l'aprem|de l’apres-midi/.test(n)){ time = pad(+time.slice(0,2) + 12) + time.slice(2); if (endTime && +endTime.slice(0,2) < 12) endTime = pad(+endTime.slice(0,2) + 12) + endTime.slice(2); }
   if (/apres-demain/.test(n)) date = addDays(t,2); else if (/demain/.test(n)) date = addDays(t,1); else if (/aujourd|ce soir|ce matin/.test(n)) date = t;
+  var dn = n.match(/\b(?:(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+|le\s+)(\d{1,2})(?:er)?\b(?!\\s*(?:h\\b|heures?|:|cm|mm|m\\b|m[eè]tres?|€|euros?|ans?\\b|min|kg|g\\b|%|personnes?|fois|x\\b))/);
+  if (!date && dn && +dn[2] >= 1 && +dn[2] <= 31){
+    var dd0 = new Date(t.getFullYear(), t.getMonth(), +dn[2]);
+    if (dd0 < t || dd0.getMonth() !== t.getMonth()) dd0 = new Date(t.getFullYear(), t.getMonth() + 1, +dn[2]);
+    if (dn[1] && dd0.getDay() !== WD[dn[1]]){ var dd1 = new Date(t.getFullYear(), t.getMonth() + 1, +dn[2]); if (dd1.getDay() === WD[dn[1]]) dd0 = dd1; }
+    date = dd0;
+  }
   var wd = n.match(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/);
   if (!date && wd){ var target = WD[wd[1]], diff = (target - t.getDay() + 7) % 7 || 7; if (/prochain/.test(n) && diff < 7) diff += 0; date = addDays(t, diff); }
   var dm = n.match(/\b(\d{1,2})(?:er)?\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)/);
-  if (dm){ var mi = MOIS_N.indexOf(dm[2]); var dd = new Date(t.getFullYear(), mi, +dm[1]); if (dd < t) dd = new Date(t.getFullYear()+1, mi, +dm[1]); date = dd; }
+  if (dm){ date = null; var mi = MOIS_N.indexOf(dm[2]); var dd = new Date(t.getFullYear(), mi, +dm[1]); if (dd < t) dd = new Date(t.getFullYear()+1, mi, +dm[1]); date = dd; }
   var sl = n.match(/\b(\d{1,2})\/(\d{1,2})\b/); if (!date && sl){ var d2 = new Date(t.getFullYear(), +sl[2]-1, +sl[1]); if (d2 < t) d2 = new Date(t.getFullYear()+1, +sl[2]-1, +sl[1]); date = d2; }
   var title = cap(stripWords(text) || text);
   /* anniversaire */
