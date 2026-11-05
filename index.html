@@ -1229,7 +1229,7 @@ function stripWords(text){
     .replace(/\b(le\s+)?\d{1,2}\/\d{1,2}\b/g,"")
     .replace(/\b(ce\s+|cette\s+)?(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)(\s+(prochain|matin|soir|après-midi|apres-midi))?\b/ig,"")
     .replace(/\b(après-demain|apres-demain|demain|aujourd'hui|aujourd’hui|ce soir|ce matin)\b/ig,"")
-    .replace(/(^|\s)((à|a|vers|de|pour)\s+)?\d{1,2}\s*(heures?|h)\s*(\d{2})?(\s*(à|a|-)\s*\d{1,2}\s*(heures?|h)\s*(\d{2})?)?(?![\wà-ÿ])/ig,"$1")
+    .replace(/(^|\s)((à|a|vers|de|pour)\s+)?\d{1,2}\s*(heures?|h|:)\s*(\d{2})?(\s*(à|a|-)\s*\d{1,2}\s*(heures?|h|:)\s*(\d{2})?)?(?![\wà-ÿ])/ig,"$1")
     .replace(/(^|\s)((à|a|vers|pour|ce|le)\s+)?(midi|minuit)(\s*(et demie?|et quart|moins le quart|30|trente|15|quart|45))?(?![\wà-ÿ-])/ig,"$1")
     .replace(/(^|\s)(du soir|de l['’]apr[eè]s-midi|de l['’]aprem|du matin)(?![\wà-ÿ])/ig,"$1")
     .replace(/\brdv\b/ig,"rendez-vous").replace(/\bdoc\b/ig,"docteur")
@@ -1337,7 +1337,7 @@ function tidyTitle(t){
 function localParse(text){
   var nc = parseNoteCmd(text); if (nc) return nc;
   var s = text.toLowerCase().trim(), n = noAcc(s), t = today(), date = null, time = null, endTime = null;
-  var tm = s.match(/(\d{1,2})\s*(?:heures?|h)\s*(\d{2})?(?:\s*(?:à|a|-)\s*(\d{1,2})\s*(?:heures?|h)\s*(\d{2})?)?/);
+  var tm = s.match(/(\d{1,2})\s*(?:heures?|h|:)\s*(\d{2})?(?:\s*(?:à|a|-)\s*(\d{1,2})\s*(?:heures?|h|:)\s*(\d{2})?)?/);
   if (tm){ time = pad(+tm[1]) + ":" + (tm[2] || "00"); if (tm[3]) endTime = pad(+tm[3]) + ":" + (tm[4] || "00"); }
   else {
     /* heures dites en mots : « samedi midi », « midi et demi », « minuit » (mais pas « après-midi ») */
@@ -1482,12 +1482,20 @@ function fieldsOf(r, text){
     person:r.person || "", cat:r.cat || null, catManual:false, orig:r};
 }
 function guessCatPlain(F){ return guessCat(F.core, F.place, splitPeople(F.people), F.reminder); }
+/* « Repas crêpes avec Alex et Sindija » + Avec = Alex, Sindija → « Repas crêpes » */
+function stripWithFromCore(core, ppl){
+  if (!ppl.length) return core;
+  var m = core.match(/^(.*\S)\s+avec\s+(.+)$/i); if (!m) return core;
+  var names = m[2].split(/\s*(?:,|\s+et\s+|&|\+)\s*/).map(normS).filter(Boolean), have = ppl.map(normS);
+  return names.length && names.every(function(n){ return have.indexOf(n) >= 0; }) ? m[1].replace(/[\s,]+$/, "") : core;
+}
 function splitPeople(v){ return String(v || "").split(/\s*(?:,|\s+et\s+|\+)\s*/).map(function(q){ return q.trim(); }).filter(Boolean).map(personName); }
 function buildFinal(F, text){
   var o = F.orig || {}, t = cap((F.core || "").trim());
   switch (F.kind){
     case "event":
       var ppl = splitPeople(F.people), tm = F.time || null;
+      t = stripWithFromCore(t, ppl);
       return {kind:"event", core:t, people:ppl, place:(F.place || "").trim(), title:eventTitle({core:t, people:ppl, place:(F.place || "").trim(), time:tm}), date:F.date || iso(today()), time:tm, endTime: tm && tm === (o.time || null) ? (o.endTime || null) : null, reminder:F.reminder, cat: F.catManual && F.cat ? F.cat : guessCatPlain(F), xp:0};
     case "quest": return {kind:"quest", title:t, steps:questSteps(t), xp:questXP(t), stat:guessStat(text)};
     case "exploit": var st = guessStat(text); return {kind:"exploit", title:t, xp:exploitXP(text), stat:st, skill:skillOf(text)};
