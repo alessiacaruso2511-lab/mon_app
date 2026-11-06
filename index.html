@@ -745,7 +745,7 @@ function applyMonth(){
   var c = {paper:"#FFFFFF", dot:"transparent", ink:"#26262C", inkSoft:"#5E5E68", band:"#EEEEF2", line:"#E6E6EC", glow:"transparent", wash:"transparent"}, r = document.documentElement.style;
   r.setProperty("--paper", c.paper); r.setProperty("--dot", c.dot); r.setProperty("--ink", c.ink); r.setProperty("--ink-soft", c.inkSoft);
   r.setProperty("--band", c.band); r.setProperty("--line", c.line); r.setProperty("--glow", c.glow); r.setProperty("--wash", c.wash);
-  var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = c.paper;
+  var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = "#DAF1F2";
   var key = (fete || mi) + "";
   if (S.sceneKey !== key){
     document.getElementById("washes").innerHTML = ""; if (false) document.getElementById("washes").innerHTML = (th.noGlow ? "" : '<div class="wash" style="left:-120px;top:-120px;width:420px;height:360px;background:radial-gradient(closest-side,var(--glow),transparent);opacity:.95"></div>')
