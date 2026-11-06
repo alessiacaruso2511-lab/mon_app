@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Mon carnet</title>
-<meta name="theme-color" content="#F7F7F9">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mon carnet">
@@ -20,7 +20,7 @@
 @font-face{font-family:"Dancing Script";font-weight:700;font-display:swap;src:url(fonts/dancing-script-latin-700-normal.woff2) format("woff2")}
 /* Concept : un carnet aquarelle (bullet journal). Chaque mois a sa palette, son illustration de haut de page et deux illustrations peintes. Thème clair unique, assumé. */
 :root{
-  --paper:#F7F7F9; --dot:transparent; --ink:#26262C; --ink-soft:#5E5E68; --band:#EEEEF2; --line:#E6E6EC; --glow:transparent; --wash:transparent;
+  --paper:#FFFFFF; --dot:transparent; --ink:#26262C; --ink-soft:#5E5E68; --band:#EEEEF2; --line:#E6E6EC; --glow:transparent; --wash:transparent;
   --text:#26262C; --muted:#66666F; --card:#FFFFFF;
   --f-hand:"Nunito", "Segoe UI", system-ui, sans-serif;
   --f-body:"Nunito", "Segoe UI", system-ui, sans-serif;
@@ -83,7 +83,7 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 html{overflow-x:hidden}
 .slide-next>#hero,.slide-next>#captureZone,.slide-next>#view>:not(.fab){animation:inFromRight .26s cubic-bezier(.2,.7,.3,1)}
 .slide-prev>#hero,.slide-prev>#captureZone,.slide-prev>#view>:not(.fab){animation:inFromLeft .26s cubic-bezier(.2,.7,.3,1)}
-#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;background:#F7F7F9;transition:opacity .35s ease}
+#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;background:#FFFFFF;transition:opacity .35s ease}
 #splash.out{opacity:0;pointer-events:none}
 #splash img{width:116px;height:116px;border-radius:28px;box-shadow:0 14px 34px rgba(150,100,60,.22)}
 #splash .spin{width:30px;height:30px;border-radius:50%;border:3px solid rgba(154,106,46,.18);border-top-color:#9A6A2E;animation:spin .9s linear infinite}
@@ -617,6 +617,10 @@ body.evp-on{overflow:hidden}
 .evp-ghost,.evp-go{flex:1;min-height:52px;border-radius:999px;font-size:15.5px;font-weight:800}
 .evp-ghost{border:1px solid var(--line);background:#FFFFFF;color:var(--text)}
 .evp-go{flex:1.3;border:0;background:#26262C;color:#FFFFFF;box-shadow:0 10px 20px rgba(30,30,45,.18)}.evp-go.is-done{background:#DDEBDD;color:#3F6B47;box-shadow:none}
+
+/* Planner_0.5 : fond blanc pur, cartes détachées par un contour et une ombre douce */
+.prow,.wstrip,.card{border-color:#EAEAF0!important;box-shadow:0 6px 20px rgba(30,30,45,.06)!important}
+nav.tabs .in{background:#FFFFFF!important}
 </style>
 </head>
 <body>
@@ -667,7 +671,7 @@ body.evp-on{overflow:hidden}
 
 
 <script>
-var APP_VERSION = "Planner_0.4";
+var APP_VERSION = "Planner_0.5";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -734,7 +738,7 @@ function applyMonth(){
   else th = Object.assign({}, THEMES[mi]);
   th.fete = fete; th.mi = fete ? FETE_THEMES[fete].base : mi;
   /* Nouvelle direction : blanc, anthracite et couleurs des domaines, plus de teinte par mois */
-  var c = {paper:"#F7F7F9", dot:"transparent", ink:"#26262C", inkSoft:"#5E5E68", band:"#EEEEF2", line:"#E6E6EC", glow:"transparent", wash:"transparent"}, r = document.documentElement.style;
+  var c = {paper:"#FFFFFF", dot:"transparent", ink:"#26262C", inkSoft:"#5E5E68", band:"#EEEEF2", line:"#E6E6EC", glow:"transparent", wash:"transparent"}, r = document.documentElement.style;
   r.setProperty("--paper", c.paper); r.setProperty("--dot", c.dot); r.setProperty("--ink", c.ink); r.setProperty("--ink-soft", c.inkSoft);
   r.setProperty("--band", c.band); r.setProperty("--line", c.line); r.setProperty("--glow", c.glow); r.setProperty("--wash", c.wash);
   var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = c.paper;
