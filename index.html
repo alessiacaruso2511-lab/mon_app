@@ -610,6 +610,7 @@ button.wev:active{filter:brightness(.97)}
 
 
 <script>
+var APP_VERSION = "Planner_0.2";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1845,7 +1846,8 @@ function settingsHTML(){
     + learnSettingsHTML()
     + '<h3 style="margin:26px 0 6px">Google Agenda</h3>' + gcalSettingsHTML()
     + '<h3 style="margin:26px 0 6px">Sauvegarde</h3><p style="font-size:13px;color:var(--muted);margin-bottom:10px">Télécharge une copie de toutes tes données, ou importe une sauvegarde.</p><div class="bk-row"><button type="button" class="btn light" data-act="export">Télécharger</button><button type="button" class="btn light" data-act="import">Importer</button><input type="file" id="impFile" accept="application/json,.json" hidden></div>'
-    + '<div style="margin-top:26px"><button type="button" class="mini" data-act="signout">Se déconnecter</button></div>';
+    + '<div style="margin-top:26px"><button type="button" class="mini" data-act="signout">Se déconnecter</button></div>'
+    + '<p style="margin:18px 0 0;font-size:12px;font-weight:700;color:#8A7A68">Version ' + APP_VERSION + '</p>';
 }
 function mountSettings(){
   var ps = document.getElementById("pmSel"); if (ps) ps.onchange = function(){ try { if (ps.value === "") localStorage.removeItem("previewMonth"); else localStorage.setItem("previewMonth", ps.value); } catch(e){} applyMonth(); makeDrift(); render(); };

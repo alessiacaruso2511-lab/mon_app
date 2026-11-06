@@ -19,4 +19,4 @@ export const ALLOWED_EMAIL = "alessia.caruso2511@gmail.com";
 
 /* Adresse du petit script Google qui renouvelle l'accès à l'agenda en arrière-plan
    (voir scripts/jeton-agenda/LISEZMOI.md). Vide = ancienne méthode avec la fenêtre Google. */
-export const AGENDA_TOKEN_URL = "";
+export const AGENDA_TOKEN_URL = "https://script.google.com/macros/s/AKfycbwp4Qy7-dl-wB2_qTi3YY7qPzkHQPWuZ2gkh3YbnM9O_FeJb2-bwNOWnGHCRHgMqGg8/exec";

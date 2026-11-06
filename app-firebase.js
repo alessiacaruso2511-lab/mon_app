@@ -71,7 +71,7 @@ function makeCal(email){
   function toRfc(local){ /* "AAAA-MM-JJTHH:MM:SS" heure locale -> RFC3339 */ const d = new Date(local); return d.toISOString(); }
   /* Accès renouvelé en arrière-plan par le petit script Google (voir scripts/jeton-agenda) :
      plus de fenêtre Google qui s'ouvre et se referme. */
-  let silentP = null;
+  let silentP = null, silentFailed = false;
   function silentToken(){
     if (!AGENDA_TOKEN_URL || !auth.currentUser || !navigator.onLine) return Promise.resolve(false);
     if (silentP) return silentP;
@@ -80,8 +80,9 @@ function makeCal(email){
         const idToken = await auth.currentUser.getIdToken();
         const r = await fetch(AGENDA_TOKEN_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ idToken }) });
         const j = await r.json();
-        if (j && j.token){ saveTok(j.token, 2700); try { localStorage.setItem("gcalConsented", "1"); } catch(e){} return true; }
+        if (j && j.token){ silentFailed = false; saveTok(j.token, 2700); try { localStorage.setItem("gcalConsented", "1"); } catch(e){} return true; }
       } catch(e){}
+      silentFailed = navigator.onLine; /* le script ne répond pas : on garde l'ancienne méthode en secours */
       return false;
     })().finally(() => { setTimeout(() => { silentP = null; }, 0); });
     return silentP;
@@ -172,7 +173,7 @@ function makeCal(email){
      (Google exige un geste de l'utilisateur ; la fenêtre se ferme toute seule puisque l'accord est déjà donné) */
   let lastTry = 0;
   document.addEventListener("pointerup", () => {
-    if (AGENDA_TOKEN_URL) return; /* renouvelé en silence, sans fenêtre */
+    if (AGENDA_TOKEN_URL && !silentFailed) return; /* renouvelé en silence, sans fenêtre */
     if (readTok() || !localStorage.getItem("gcalConsented") || !navigator.onLine || pending || Date.now() - lastTry < 600000) return;
     lastTry = Date.now();
     cal.connect().catch(() => {});
