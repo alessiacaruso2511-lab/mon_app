@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { FIREBASE_CONFIG, GOOGLE_CLIENT_ID, ALLOWED_EMAIL } from "./firebase-config.js";
+import { FIREBASE_CONFIG, GOOGLE_CLIENT_ID, ALLOWED_EMAIL, AGENDA_TOKEN_URL } from "./firebase-config.js";
 
 const app = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
@@ -69,13 +69,36 @@ function makeCal(email){
   const watchers = [];
   function err(code, extra){ return Object.assign({ code }, extra || {}); }
   function toRfc(local){ /* "AAAA-MM-JJTHH:MM:SS" heure locale -> RFC3339 */ const d = new Date(local); return d.toISOString(); }
-  async function api(method, path, body){
-    const tok = readTok(); if (!tok) throw err("needs_auth");
+  /* Accès renouvelé en arrière-plan par le petit script Google (voir scripts/jeton-agenda) :
+     plus de fenêtre Google qui s'ouvre et se referme. */
+  let silentP = null;
+  function silentToken(){
+    if (!AGENDA_TOKEN_URL || !auth.currentUser || !navigator.onLine) return Promise.resolve(false);
+    if (silentP) return silentP;
+    silentP = (async () => {
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        const r = await fetch(AGENDA_TOKEN_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ idToken }) });
+        const j = await r.json();
+        if (j && j.token){ saveTok(j.token, 2700); try { localStorage.setItem("gcalConsented", "1"); } catch(e){} return true; }
+      } catch(e){}
+      return false;
+    })().finally(() => { setTimeout(() => { silentP = null; }, 0); });
+    return silentP;
+  }
+  async function api(method, path, body, retried){
+    let tok = readTok();
+    if (!tok && await silentToken()) tok = readTok();
+    if (!tok) throw err("needs_auth");
     if (!navigator.onLine) throw err("offline");
     let r;
     try { r = await fetch("https://www.googleapis.com/calendar/v3" + path, { method, headers: { Authorization: "Bearer " + tok, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined }); }
     catch(e){ throw err("offline"); }
-    if (r.status === 401){ try { localStorage.removeItem(TOK_KEY); } catch(e){} throw err("needs_auth"); }
+    if (r.status === 401){
+      try { localStorage.removeItem(TOK_KEY); } catch(e){}
+      if (!retried && await silentToken()) return api(method, path, body, true);
+      throw err("needs_auth");
+    }
     if (!r.ok) throw err("upstream_error", { status: r.status });
     return r.status === 204 ? {} : r.json();
   }
@@ -123,6 +146,7 @@ function makeCal(email){
     /* à appeler depuis un appui : ouvre la fenêtre Google si besoin.
        change = true : choisir un autre compte Google */
     connect: async (change) => {
+      if (!change && await silentToken()){ watchers.forEach(runWatch); return; }
       await loadGis();
       if (!tokenClient){
         tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: SCOPE, prompt: "",
@@ -148,10 +172,13 @@ function makeCal(email){
      (Google exige un geste de l'utilisateur ; la fenêtre se ferme toute seule puisque l'accord est déjà donné) */
   let lastTry = 0;
   document.addEventListener("pointerup", () => {
+    if (AGENDA_TOKEN_URL) return; /* renouvelé en silence, sans fenêtre */
     if (readTok() || !localStorage.getItem("gcalConsented") || !navigator.onLine || pending || Date.now() - lastTry < 600000) return;
     lastTry = Date.now();
     cal.connect().catch(() => {});
   }, true);
+  /* renouvelle l'accès un peu avant qu'il expire, sans rien ouvrir */
+  if (AGENDA_TOKEN_URL) setInterval(() => { if (!readTok() || document.visibilityState !== "visible") return; try { const t = JSON.parse(localStorage.getItem(TOK_KEY)); if (t.exp - Date.now() < 300000) silentToken(); } catch(e){} }, 60000);
   /* reprend la main tout seul quand la connexion revient */
   window.addEventListener("online", () => watchers.forEach(runWatch));
   return cal;

@@ -16,3 +16,7 @@ export const GOOGLE_CLIENT_ID = "146585661949-kpokg3nrt2nj7sl7gipqdi9supif6i72.a
 
 /* Le seul compte autorisé à ouvrir l'appli */
 export const ALLOWED_EMAIL = "alessia.caruso2511@gmail.com";
+
+/* Adresse du petit script Google qui renouvelle l'accès à l'agenda en arrière-plan
+   (voir scripts/jeton-agenda/LISEZMOI.md). Vide = ancienne méthode avec la fenêtre Google. */
+export const AGENDA_TOKEN_URL = "";
