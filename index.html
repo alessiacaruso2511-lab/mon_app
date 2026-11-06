@@ -101,7 +101,7 @@ html{overflow-x:hidden}
 @media (prefers-reduced-motion:reduce){.faller,.pulse,.bob,.bar i,.slide-next>*,.slide-prev>*,.slide-next>#view>*,.slide-prev>#view>*,.btn-mic.on{animation:none!important}.faller{display:none}}
 
 .settings-link{display:flex;justify-content:center;margin-top:18px}
-.settings-link button{display:flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;border:0;background:transparent;color:#A69C90;font-size:13px;font-weight:700}
+.settings-link button{display:flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;border:0;background:transparent;color:#85858F;font-size:13px;font-weight:700}
 
 /* Bulles */
 .bubbles-wrap{margin-top:18px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -625,6 +625,25 @@ nav.tabs .in{background:#FFFFFF!important}
 /* Planner_0.6 : bandeau bleu d'eau en haut, qui se fond dans le blanc */
 html{background:linear-gradient(180deg,rgba(218,241,242,1.000) 0px,rgba(218,241,242,0.863) 57px,rgba(218,241,242,0.733) 113px,rgba(218,241,242,0.613) 170px,rgba(218,241,242,0.502) 227px,rgba(218,241,242,0.400) 283px,rgba(218,241,242,0.308) 340px,rgba(218,241,242,0.226) 397px,rgba(218,241,242,0.154) 453px,rgba(218,241,242,0.095) 510px,rgba(218,241,242,0.048) 567px,rgba(218,241,242,0.015) 623px,rgba(218,241,242,0.000) 680px) no-repeat,#FFFFFF!important}
 body{background:transparent!important}
+
+/* Planner_0.8 : bouton + au milieu et panneau d'ajout */
+nav.tabs .in{grid-template-columns:repeat(2,calc((100% - 64px) / 4)) 64px repeat(3,calc((100% - 64px) / 6))!important;align-items:center}
+nav.tabs a{font-size:11.5px!important;min-width:0}
+.nav-add{justify-self:center;width:58px;height:58px;margin-top:-30px;border-radius:50%;border:4px solid #FFFFFF;background:#26262C;color:#FFFFFF;display:grid;place-items:center;padding:0;box-shadow:0 10px 22px rgba(30,30,45,.28);cursor:pointer}
+.nav-add:active{transform:scale(.95)}
+#addRoot{position:fixed;inset:0;z-index:45}
+#addRoot[hidden]{display:none}
+body.add-on{overflow:hidden}
+.add-wrap{position:absolute;inset:0;background:rgba(25,25,35,.35);display:flex;align-items:flex-end;justify-content:center}
+.add-sheet{width:100%;max-width:560px;box-sizing:border-box;overflow:auto;background:#FFFFFF;border-radius:28px 28px 0 0;padding:10px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));box-shadow:0 -14px 40px rgba(25,25,35,.22);animation:addUp .28s cubic-bezier(.2,.8,.3,1)}
+@keyframes addUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.add-grab{display:block;width:42px;height:5px;border-radius:9px;background:#E2E2E8;margin:0 auto 8px}
+.add-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.add-head h2{font-size:22px;font-weight:800;color:var(--text)}
+.add-head .close{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#FFFFFF;display:grid;place-items:center;color:var(--text);padding:0}
+#addSlot .capture{margin:0}
+.add-tip{margin-top:10px;font-size:13px;font-weight:600;color:var(--muted);line-height:1.45}
+#addSlot .cap-prev~.add-tip,#addSlot:has(.cap-prev)+.add-tip{display:none}
 </style>
 </head>
 <body>
@@ -664,18 +683,20 @@ body{background:transparent!important}
   <div class="in">
     <a href="#accueil" data-tab="accueil"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/><path d="M10 20v-5h4v5"/></svg>Aujourd'hui</a>
     <a href="#quetes" data-tab="quetes"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6"/><path d="M7 4a2 2 0 0 0-2 2v2h2M6 20a2 2 0 0 1-2-2v-1h10v1a2 2 0 0 0 2 2M10 9h5M10 13h5"/></svg>Quêtes</a>
+    <button type="button" class="nav-add" data-act="add-open" aria-label="Ajouter quelque chose"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
     <a href="#fiche" data-tab="fiche"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Fiche</a>
     <a href="#gazette" data-tab="gazette"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1z"/><path d="M17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 16h4"/></svg><i class="nbadge" id="gazBadge" hidden></i></span>Gazette<span class="sr" id="gazBadgeSr"></span></a>
     <a href="#notes" data-tab="notes"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/></svg>Notes</a>
   </div>
 </nav>
 
+<div id="addRoot" hidden><div class="add-wrap" id="addWrap"><div class="add-sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addT"><span class="add-grab" aria-hidden="true"></span><div class="add-head"><h2 id="addT">Ajouter</h2><button type="button" class="close" data-act="add-close" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div id="addSlot"></div><p class="add-tip" id="addTip">Écris ou dicte, comme tu le dirais : « dentiste mardi 14h », « rappelle-moi d'appeler maman », « note : idées cadeaux »…</p></div></div></div>
 <div id="sheetRoot"></div>
 <div id="toastRoot" aria-live="polite"></div>
 
 
 <script>
-var APP_VERSION = "Planner_0.7";
+var APP_VERSION = "Planner_0.8";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -972,7 +993,7 @@ function questCardHTML(q, big){
   var seg = steps.length ? '<div class="seg" aria-hidden="true">' + steps.map(function(s){ return '<i' + (s.done ? ' style="background:' + c[1] + '"' : "") + '></i>'; }).join("") + '</div>' : "";
   var stepBtn = function(s, idx){
     var cls = s.done ? " done" : idx === cur ? " next" : "";
-    var bx = s.done ? '<span class="bx" style="background:' + c[1] + ';border-color:' + c[1] + ';color:#FFFFFF">' + check + '</span>' : '<span class="bx" style="color:' + (idx === cur ? c[1] : "#C9B48E") + '"></span>';
+    var bx = s.done ? '<span class="bx" style="background:' + c[1] + ';border-color:' + c[1] + ';color:#FFFFFF">' + check + '</span>' : '<span class="bx" style="color:' + (idx === cur ? c[1] : "#C4C4CC") + '"></span>';
     return '<button type="button" class="step2' + cls + '" data-act="step" data-id="' + h(q._id) + '" data-i="' + idx + '" aria-pressed="' + (s.done ? "true" : "false") + '">' + bx + '<span>' + h(s.t) + '</span>' + (!big && idx === cur ? '<span class="hint">Prochaine étape</span>' : "") + '</button>';
   };
   var stepsHTML = big ? steps.map(stepBtn).join("") : (cur >= 0 ? stepBtn(steps[cur], cur) : "");
@@ -1209,7 +1230,7 @@ function render(){
   var hero = document.getElementById("hero");
   hero.className = "hd" + (v === "accueil" ? "" : " small");
   hero.innerHTML = heroHTML();
-  document.getElementById("captureZone").hidden = v !== "accueil";
+  document.getElementById("captureZone").hidden = true; /* l'ajout passe par le bouton + */
   if (v === "accueil") document.getElementById("bubbleZone").innerHTML = "";
   if (v === "gazette") markGazetteSeen(); else S.gazNew = {};
   var unseenN = v === "gazette" ? 0 : unseenGazette().length;
@@ -1878,6 +1899,29 @@ function updatePreviewOut(){
   out.innerHTML = r.kind === "event" ? '<b>' + h(r.title || "Sans titre") + '</b>' + (r.date ? ' · ' + h(fmtDay(parseISO(r.date))) : "") + (r.place ? '<br>Lieu dans ton agenda : ' + h(r.place) : "")
     : '<b>' + h(describe(r)) + '</b>';
 }
+/* ---------- panneau d'ajout (bouton + au milieu) ---------- */
+function addOpen(){
+  var root = document.getElementById("addRoot"), slot = document.getElementById("addSlot");
+  ["captureForm","capPrev","captureHint"].forEach(function(id){ var el = document.getElementById(id); if (el) slot.appendChild(el); });
+  root.hidden = false; document.body.classList.add("add-on");
+  addFit();
+  var inp = document.getElementById("captureInput"); setTimeout(function(){ inp.focus(); }, 60);
+}
+function addClose(){
+  var root = document.getElementById("addRoot"); if (root.hidden) return;
+  if (CP){ CP = null; renderPreview(); }
+  var zone = document.getElementById("captureZone");
+  ["captureForm","captureHint"].forEach(function(id){ var el = document.getElementById(id); if (el) zone.appendChild(el); });
+  root.hidden = true; document.body.classList.remove("add-on");
+  var inp = document.getElementById("captureInput"); if (inp) inp.blur();
+}
+function addFit(){
+  var sh = document.getElementById("addSheet"), vv = window.visualViewport; if (!sh) return;
+  var off = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  sh.style.marginBottom = off + "px"; sh.style.maxHeight = ((vv ? vv.height : window.innerHeight) - 24) + "px";
+}
+if (window.visualViewport){ window.visualViewport.addEventListener("resize", addFit); window.visualViewport.addEventListener("scroll", addFit); }
+document.addEventListener("keydown", function(e){ if (e.key === "Escape" && !document.getElementById("addRoot").hidden) addClose(); });
 function cancelPreview(){
   var input = document.getElementById("captureInput"); if (CP) input.value = CP.text;
   CP = null; renderPreview(); input.focus();
@@ -1888,6 +1932,7 @@ function validatePreview(){
   if (F.kind === "event" && !F.date){ var d = document.getElementById("cpDate"); if (d) d.focus(); return; }
   var r = buildFinal(F, text), learned = learnFrom(CP.F0, F, text);
   CP = null; renderPreview();
+  if (!document.getElementById("addRoot").hidden) setTimeout(addClose, 250);
   if (learned.length){ hint.textContent = "C'est noté, je m'en souviendrai la prochaine fois."; setTimeout(function(){ hint.textContent = ""; }, 4000); }
   Promise.resolve(commit(r)).catch(dbErr);
 }
@@ -2663,6 +2708,8 @@ document.addEventListener("click", function(e){
   if (act === "export"){ exportBackup(); return; }
   if (act === "bday-edit"){ bdayEditSheet(id); return; }
   if (act === "ev-edit"){ eventEditSheet(b.dataset.gid || null, b.dataset.id || null); return; }
+  if (act === "add-open"){ addOpen(); return; }
+  if (act === "add-close"){ addClose(); return; }
   if (act === "ev-open"){ openEvent(b.dataset.gid || null, b.dataset.id || null, b.dataset.d || null); return; }
   if (act === "ev-close"){ closeEvent(); return; }
   if (act === "ev-done"){ evDone(); return; }
