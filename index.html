@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Mon carnet</title>
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#DAF1F2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mon carnet">
@@ -621,6 +621,10 @@ body.evp-on{overflow:hidden}
 /* Planner_0.5 : fond blanc pur, cartes détachées par un contour et une ombre douce */
 .prow,.wstrip,.card{border-color:#EAEAF0!important;box-shadow:0 6px 20px rgba(30,30,45,.06)!important}
 nav.tabs .in{background:#FFFFFF!important}
+
+/* Planner_0.6 : bandeau bleu d'eau en haut, qui se fond dans le blanc */
+html{background:linear-gradient(180deg,rgba(218,241,242,1.000) 0px,rgba(218,241,242,0.863) 57px,rgba(218,241,242,0.733) 113px,rgba(218,241,242,0.613) 170px,rgba(218,241,242,0.502) 227px,rgba(218,241,242,0.400) 283px,rgba(218,241,242,0.308) 340px,rgba(218,241,242,0.226) 397px,rgba(218,241,242,0.154) 453px,rgba(218,241,242,0.095) 510px,rgba(218,241,242,0.048) 567px,rgba(218,241,242,0.015) 623px,rgba(218,241,242,0.000) 680px) no-repeat,#FFFFFF!important}
+body{background:transparent!important}
 </style>
 </head>
 <body>
@@ -671,7 +675,7 @@ nav.tabs .in{background:#FFFFFF!important}
 
 
 <script>
-var APP_VERSION = "Planner_0.5";
+var APP_VERSION = "Planner_0.6";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
