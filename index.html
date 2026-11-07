@@ -622,8 +622,9 @@ body.evp-on{overflow:hidden}
 .prow,.wstrip,.card{border-color:#EAEAF0!important;box-shadow:0 6px 20px rgba(30,30,45,.06)!important}
 nav.tabs .in{background:#FFFFFF!important}
 
-/* Planner_0.6 : bandeau bleu d'eau en haut, qui se fond dans le blanc */
-html{background:linear-gradient(180deg,rgba(218,241,242,1.000) 0px,rgba(218,241,242,0.863) 57px,rgba(218,241,242,0.733) 113px,rgba(218,241,242,0.613) 170px,rgba(218,241,242,0.502) 227px,rgba(218,241,242,0.400) 283px,rgba(218,241,242,0.308) 340px,rgba(218,241,242,0.226) 397px,rgba(218,241,242,0.154) 453px,rgba(218,241,242,0.095) 510px,rgba(218,241,242,0.048) 567px,rgba(218,241,242,0.015) 623px,rgba(218,241,242,0.000) 680px) no-repeat,#FFFFFF!important}
+/* Planner_0.6 puis 0.14 : bandeau en haut qui se fond dans le blanc ; sa couleur suit l'heure (voir applySky) */
+:root{--sky:218,241,242}
+html{background:linear-gradient(180deg,rgba(var(--sky),1.000) 0px,rgba(var(--sky),0.863) 57px,rgba(var(--sky),0.733) 113px,rgba(var(--sky),0.613) 170px,rgba(var(--sky),0.502) 227px,rgba(var(--sky),0.400) 283px,rgba(var(--sky),0.308) 340px,rgba(var(--sky),0.226) 397px,rgba(var(--sky),0.154) 453px,rgba(var(--sky),0.095) 510px,rgba(var(--sky),0.048) 567px,rgba(var(--sky),0.015) 623px,rgba(var(--sky),0.000) 680px) no-repeat,#FFFFFF!important}
 body{background:transparent!important}
 
 /* Planner_0.8 : bouton + au milieu et panneau d'ajout */
@@ -737,7 +738,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.13";
+var APP_VERSION = "Planner_0.14";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -807,7 +808,7 @@ function applyMonth(){
   var c = {paper:"#FFFFFF", dot:"transparent", ink:"#26262C", inkSoft:"#5E5E68", band:"#EEEEF2", line:"#E6E6EC", glow:"transparent", wash:"transparent"}, r = document.documentElement.style;
   r.setProperty("--paper", c.paper); r.setProperty("--dot", c.dot); r.setProperty("--ink", c.ink); r.setProperty("--ink-soft", c.inkSoft);
   r.setProperty("--band", c.band); r.setProperty("--line", c.line); r.setProperty("--glow", c.glow); r.setProperty("--wash", c.wash);
-  var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = "#DAF1F2";
+  var meta = document.querySelector('meta[name="theme-color"]'); if (meta && typeof SKY_KEYS !== "undefined" && SKY_KEYS) applySky();
   var key = (fete || mi) + "";
   if (S.sceneKey !== key){
     document.getElementById("washes").innerHTML = ""; if (false) document.getElementById("washes").innerHTML = (th.noGlow ? "" : '<div class="wash" style="left:-120px;top:-120px;width:420px;height:360px;background:radial-gradient(closest-side,var(--glow),transparent);opacity:.95"></div>')
@@ -1948,6 +1949,29 @@ function updatePreviewOut(){
 }
 
 
+
+/* ---------- Couleur du ciel selon l'heure (Planner_0.14, idée de Théo) ---------- */
+var SKY_KEYS = [[0,"#DCDDF6"],[5.5,"#DCDDF6"],[7,"#FFDDB0"],[9,"#DAF1F2"],[12.5,"#D2EBFA"],[16.5,"#D8F0EC"],[18.5,"#FFCF9E"],[20.5,"#EBDDF7"],[22.5,"#DCDDF6"],[24,"#DCDDF6"]];
+function skyRGB(d){
+  var t = d.getHours() + d.getMinutes() / 60, hx = function(c){ return [1,3,5].map(function(i){ return parseInt(c.slice(i, i + 2), 16); }); };
+  for (var i = 0; i < SKY_KEYS.length - 1; i++){
+    var a = SKY_KEYS[i], b = SKY_KEYS[i + 1];
+    if (t >= a[0] && t <= b[0]){
+      var f = b[0] > a[0] ? (t - a[0]) / (b[0] - a[0]) : 0; f = f * f * (3 - 2 * f);
+      var A = hx(a[1]), B = hx(b[1]);
+      return A.map(function(v, k){ return Math.round(v + (B[k] - v) * f); });
+    }
+  }
+  return hx("#DAF1F2");
+}
+function applySky(){
+  var c = skyRGB(new Date());
+  document.documentElement.style.setProperty("--sky", c.join(","));
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = "#" + c.map(function(v){ return (v < 16 ? "0" : "") + v.toString(16); }).join("").toUpperCase();
+}
+applySky(); setInterval(applySky, 60000);
+document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "visible") applySky(); });
 /* ---------- Mood board (Planner_0.13) : une case par jour, une couleur par humeur ---------- */
 var MOODS = [
   {k:"top", n:"Très bonne journée", c:"#D7B6F6"},
