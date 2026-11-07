@@ -717,7 +717,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.10";
+var APP_VERSION = "Planner_0.11";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -2053,16 +2053,22 @@ document.addEventListener("click", function(e){
     var from = st.order.indexOf(st.id), to = st.order.indexOf(over.dataset.id);
     st.order.splice(from, 1); st.order.splice(to, 0, st.id); redraw();
   }, {passive:false});
+  var noClick = 0;
+  document.addEventListener("click", function(e){
+    var t = e.target.closest && e.target.closest("#mGrid .mtile"); if (!t) return;
+    e.preventDefault(); if (Date.now() < noClick) return; goPage(t.dataset.id);
+  });
   function end(e){
     if (!st) return; clearTimeout(st.timer); var s0 = st; st = null;
     if (s0.drag){
+      noClick = Date.now() + 400;
       if (s0.ghost) s0.ghost.remove(); var g = document.getElementById("mGrid"); if (g) g.classList.remove("dragging");
       var changed = s0.order.join() !== navOrder().join();
       if (changed){ saveNavOrder(s0.order); renderNav(); render(); toast(s0.order.slice(0, 3).indexOf(s0.id) >= 0 ? PAGES[s0.id].n + " est dans ta barre." : "Rangement enregistré."); }
       var gg = document.getElementById("mGrid"); if (gg) gg.innerHTML = moreGridHTML(navOrder());
       return;
     }
-    if (!s0.moved && e.type === "pointerup") goPage(s0.id);
+    /* un toucher simple est traité au « click » : si on fermait la grille ici, le click tomberait sur ce qu'il y a dessous (un article de la Gazette par exemple) */
   }
   document.addEventListener("pointerup", end); document.addEventListener("pointercancel", end);
   document.addEventListener("contextmenu", function(e){ if (e.target.closest && e.target.closest("#mGrid")) e.preventDefault(); });
