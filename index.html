@@ -644,6 +644,27 @@ body.add-on{overflow:hidden}
 #addSlot .capture{margin:0}
 .add-tip{margin-top:10px;font-size:13px;font-weight:600;color:var(--muted);line-height:1.45}
 #addSlot .cap-prev~.add-tip,#addSlot:has(.cap-prev)+.add-tip{display:none}
+
+/* Planner_0.9 : barre à 2 + 2 autour du +, grille « Plus » réorganisable */
+nav.tabs .in{grid-template-columns:repeat(2,minmax(0,1fr)) 68px repeat(2,minmax(0,1fr))!important}
+nav.tabs .navb{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border:0;border-radius:14px;background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+nav.tabs .navb[aria-current="page"]{background:var(--band);color:var(--ink);font-weight:800}
+nav.tabs .navb .ic{position:relative;display:grid}
+nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#moreRoot{position:fixed;inset:0;z-index:44}#moreRoot[hidden]{display:none}
+.more-wrap{position:absolute;inset:0;background:rgba(25,25,35,.35);display:flex;align-items:flex-end;justify-content:center}
+.more-sheet{width:100%;max-width:560px;box-sizing:border-box;max-height:88vh;overflow:auto;background:#FFFFFF;border-radius:28px 28px 0 0;padding:10px max(18px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));box-shadow:0 -14px 40px rgba(25,25,35,.22);animation:addUp .28s cubic-bezier(.2,.8,.3,1)}
+.mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 8px}
+.mlab{grid-column:1/-1;margin:6px 0 -4px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.mtile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border:0;border-radius:18px;background:transparent;font:inherit;color:var(--text);cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mtile i{width:60px;height:60px;border-radius:19px;display:grid;place-items:center}
+.mtile small{font-size:12.5px;font-weight:800;text-align:center;line-height:1.2}
+.mtile.cur small{text-decoration:underline;text-underline-offset:3px}
+.mtile.ph{opacity:.25}
+.mtile.ghost{position:fixed;z-index:60;pointer-events:none;transform:scale(1.08);filter:drop-shadow(0 12px 18px rgba(25,25,35,.25));background:transparent}
+.mgrid.dragging .mtile:not(.ph) i{animation:wig .32s ease-in-out infinite alternate}
+@keyframes wig{from{transform:rotate(-2.5deg)}to{transform:rotate(2.5deg)}}
+@media (prefers-reduced-motion:reduce){.mgrid.dragging .mtile i{animation:none}}
 </style>
 </head>
 <body>
@@ -680,15 +701,9 @@ body.add-on{overflow:hidden}
 
 <div id="evRoot" hidden></div>
 <nav class="tabs" aria-label="Navigation">
-  <div class="in">
-    <a href="#accueil" data-tab="accueil"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/><path d="M10 20v-5h4v5"/></svg>Aujourd'hui</a>
-    <a href="#quetes" data-tab="quetes"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6"/><path d="M7 4a2 2 0 0 0-2 2v2h2M6 20a2 2 0 0 1-2-2v-1h10v1a2 2 0 0 0 2 2M10 9h5M10 13h5"/></svg>Quêtes</a>
-    <button type="button" class="nav-add" data-act="add-open" aria-label="Ajouter quelque chose"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-    <a href="#fiche" data-tab="fiche"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Fiche</a>
-    <a href="#gazette" data-tab="gazette"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1z"/><path d="M17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 16h4"/></svg><i class="nbadge" id="gazBadge" hidden></i></span>Gazette<span class="sr" id="gazBadgeSr"></span></a>
-    <a href="#notes" data-tab="notes"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/></svg>Notes</a>
-  </div>
+  <div class="in" id="navIn"></div>
 </nav>
+<div id="moreRoot" hidden></div>
 
 <div id="addRoot" hidden><div class="add-wrap" id="addWrap"><div class="add-sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addT"><span class="add-grab" aria-hidden="true"></span><div class="add-head"><h2 id="addT">Ajouter</h2><button type="button" class="close" data-act="add-close" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div id="addSlot"></div><p class="add-tip" id="addTip">Écris ou dicte, comme tu le dirais : « dentiste mardi 14h », « rappelle-moi d'appeler maman », « note : idées cadeaux »…</p></div></div></div>
 <div id="sheetRoot"></div>
@@ -696,7 +711,7 @@ body.add-on{overflow:hidden}
 
 
 <script>
-var APP_VERSION = "Planner_0.8";
+var APP_VERSION = "Planner_0.9";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1226,6 +1241,7 @@ function viewGazette(){
 function fmtShort(d){ var x = parseISO(String(d).slice(0,10)); return x.getDate() + " " + MOIS[x.getMonth()]; }
 
 function render(){
+  var navSig = navOrder().slice(0, 3).join(); if (S.navSig !== navSig || !document.querySelector("#navIn > *")){ S.navSig = navSig; renderNav(); }
   var v = S.view;
   var hero = document.getElementById("hero");
   hero.className = "hd" + (v === "accueil" ? "" : " small");
@@ -1242,7 +1258,9 @@ function render(){
   document.getElementById("view").innerHTML = html;
   if (v === "notes"){ afterNotesRender(); if (!S.purged && S.notesLoaded){ S.purged = true; purgeOldNotes(); } }
   if (S.evOpen && !document.getElementById("evRoot").hidden) openEvent(S.evOpen.gid, S.evOpen.did, S.evOpen.d, true);
+  var inBarV = navOrder().slice(0, 3).indexOf(v) >= 0;
   document.querySelectorAll("nav.tabs a").forEach(function(a){ if (a.dataset.tab === v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  var pm = document.querySelector(".nav-more"); if (pm){ if (!inBarV) pm.setAttribute("aria-current","page"); else pm.removeAttribute("aria-current"); }
 }
 
 
@@ -1899,6 +1917,117 @@ function updatePreviewOut(){
   out.innerHTML = r.kind === "event" ? '<b>' + h(r.title || "Sans titre") + '</b>' + (r.date ? ' · ' + h(fmtDay(parseISO(r.date))) : "") + (r.place ? '<br>Lieu dans ton agenda : ' + h(r.place) : "")
     : '<b>' + h(describe(r)) + '</b>';
 }
+
+/* ---------- Menu du bas (Planner_0.9) : 3 pages au choix + bouton + + « Plus » ---------- */
+var NAV_IC = {accueil:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/><path d="M10 20v-5h4v5"/></svg>',quetes:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6"/><path d="M7 4a2 2 0 0 0-2 2v2h2M6 20a2 2 0 0 1-2-2v-1h10v1a2 2 0 0 0 2 2M10 9h5M10 13h5"/></svg>',fiche:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',gazette:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1z"/><path d="M17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 16h4"/></svg>',notes:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/></svg>',
+  mois:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
+  reglages:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>',
+  plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>'};
+var PAGES = {
+  accueil:{n:"Aujourd'hui", view:true, k:null},
+  quetes:{n:"Quêtes", view:true, k:"rappel"},
+  notes:{n:"Notes", view:true, k:"admin"},
+  fiche:{n:"Fiche", view:true, k:"sante"},
+  gazette:{n:"Gazette", view:true, k:"peche"},
+  mois:{n:"Agenda du mois", act:"month", k:"danse"},
+  reglages:{n:"Réglages", act:"settings", k:null}
+};
+CAT_COL.peche = CAT_COL.peche || ["#FDDCC6","#AA4A1C","#EFA27A"];
+var NAV_DEFAULT = ["accueil","quetes","notes","fiche","gazette","mois","reglages"];
+function navOrder(){
+  var o = (S.settings && S.settings.navOrder) || null;
+  if (!o){ try { o = JSON.parse(localStorage.getItem("navOrder") || "null"); } catch(e){ o = null; } }
+  o = (o || []).filter(function(id, i, a){ return PAGES[id] && a.indexOf(id) === i; });
+  NAV_DEFAULT.forEach(function(id){ if (o.indexOf(id) < 0) o.push(id); });
+  return o;
+}
+function saveNavOrder(o){ try { localStorage.setItem("navOrder", JSON.stringify(o)); } catch(e){} if (S.settings) S.settings.navOrder = o; saveSettings({navOrder:o}); }
+function viewOrder(){ return navOrder().filter(function(id){ return PAGES[id].view; }); }
+function navItem(id){
+  var p = PAGES[id], ic = NAV_IC[id];
+  if (id === "gazette") ic = '<span class="ic">' + ic + '<i class="nbadge" id="gazBadge" hidden></i></span>';
+  if (p.view) return '<a href="#' + id + '" data-tab="' + id + '">' + ic + '<span class="nl">' + h(p.n) + '</span>' + (id === "gazette" ? '<span class="sr" id="gazBadgeSr"></span>' : "") + '</a>';
+  return '<button type="button" class="navb" data-act="' + p.act + '">' + ic + '<span class="nl">' + h(id === "mois" ? "Agenda" : p.n) + '</span></button>';
+}
+function renderNav(){
+  var o = navOrder(), bar = o.slice(0, 3), inBar = bar.indexOf("gazette") >= 0;
+  var plus = '<button type="button" class="navb nav-more" data-act="more-open" aria-haspopup="dialog" aria-label="Plus de pages"><span class="ic">' + NAV_IC.plus + (inBar ? "" : '<i class="nbadge" id="gazBadge" hidden></i>') + '</span><span class="nl">Plus</span>' + (inBar ? "" : '<span class="sr" id="gazBadgeSr"></span>') + '</button>';
+  document.getElementById("navIn").innerHTML = navItem(bar[0]) + navItem(bar[1])
+    + '<button type="button" class="nav-add" data-act="add-open" aria-label="Ajouter quelque chose"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>'
+    + navItem(bar[2]) + plus;
+}
+function moreTile(id){
+  var p = PAGES[id], C = p.k ? CAT_COL[p.k] : ["#F1F1F4","#26262C","#E4E4EA"];
+  return '<button type="button" class="mtile' + (S.view === id ? " cur" : "") + '" data-id="' + id + '" aria-label="' + h(p.n) + '"><i style="background:' + C[0] + ';color:' + C[1] + ';box-shadow:inset 0 0 0 1.5px ' + C[2] + '">' + NAV_IC[id] + '</i><small>' + h(p.n) + '</small></button>';
+}
+function moreGridHTML(o){
+  return '<p class="mlab">Dans ma barre</p>' + o.slice(0, 3).map(moreTile).join("") + '<p class="mlab">Autres pages</p>' + o.slice(3).map(moreTile).join("");
+}
+function moreOpen(){
+  var root = document.getElementById("moreRoot");
+  root.innerHTML = '<div class="more-wrap" data-act="more-close"><div class="more-sheet" role="dialog" aria-modal="true" aria-labelledby="moreT" onclick="event.stopPropagation()">'
+    + '<span class="add-grab" aria-hidden="true"></span><div class="add-head"><h2 id="moreT">Toutes mes pages</h2><button type="button" class="close" data-act="more-close" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'
+    + '<p class="add-tip" style="margin:0 0 12px">Maintiens une page puis fais-la glisser pour la ranger. Les 3 premières sont dans ta barre du bas.</p>'
+    + '<div class="mgrid" id="mGrid">' + moreGridHTML(navOrder()) + '</div></div></div>';
+  root.hidden = false; document.body.classList.add("add-on");
+  var f = root.querySelector(".mtile"); if (f) f.focus();
+}
+function moreClose(){ var root = document.getElementById("moreRoot"); if (root.hidden) return; root.hidden = true; root.innerHTML = ""; document.body.classList.remove("add-on"); }
+function goPage(id){
+  var p = PAGES[id]; moreClose();
+  if (p.view){ location.hash = id; return; }
+  var bt = document.createElement("button"); bt.type = "button"; bt.dataset.act = p.act; bt.hidden = true; document.body.appendChild(bt); bt.click(); bt.remove();
+}
+/* glisser-déposer dans la grille : appui long, puis on déplace */
+(function(){
+  var st = null;
+  function rects(){ var r = {}; document.querySelectorAll("#mGrid .mtile").forEach(function(t){ r[t.dataset.id] = t.getBoundingClientRect(); }); return r; }
+  function redraw(){
+    var before = rects(), g = document.getElementById("mGrid"); if (!g) return;
+    g.innerHTML = moreGridHTML(st.order);
+    var ph = g.querySelector('.mtile[data-id="' + st.id + '"]'); if (ph) ph.classList.add("ph");
+    g.querySelectorAll(".mtile").forEach(function(t){
+      var a = before[t.dataset.id], b = t.getBoundingClientRect(); if (!a || t.dataset.id === st.id) return;
+      var dx = a.left - b.left, dy = a.top - b.top; if (!dx && !dy) return;
+      t.style.transition = "none"; t.style.transform = "translate(" + dx + "px," + dy + "px)";
+      requestAnimationFrame(function(){ t.style.transition = "transform .22s ease"; t.style.transform = ""; });
+    });
+  }
+  document.addEventListener("pointerdown", function(e){
+    var t = e.target.closest && e.target.closest("#mGrid .mtile"); if (!t) return;
+    st = {id:t.dataset.id, x:e.clientX, y:e.clientY, drag:false, moved:false, order:navOrder()};
+    st.timer = setTimeout(function(){
+      if (!st || st.moved) return;
+      st.drag = true; if (navigator.vibrate) try { navigator.vibrate(15); } catch(x){}
+      var r = t.getBoundingClientRect(), gh = t.cloneNode(true); gh.className = "mtile ghost"; gh.style.width = r.width + "px"; gh.style.left = (st.x - r.width / 2) + "px"; gh.style.top = (st.y - r.height / 2) + "px";
+      document.body.appendChild(gh); st.ghost = gh; st.w = r.width; st.h = r.height; t.classList.add("ph");
+      document.getElementById("mGrid").classList.add("dragging");
+    }, 380);
+  });
+  document.addEventListener("pointermove", function(e){
+    if (!st) return;
+    if (!st.drag){ if (Math.abs(e.clientX - st.x) + Math.abs(e.clientY - st.y) > 10){ st.moved = true; clearTimeout(st.timer); } return; }
+    e.preventDefault();
+    st.ghost.style.left = (e.clientX - st.w / 2) + "px"; st.ghost.style.top = (e.clientY - st.h / 2) + "px";
+    var el = document.elementFromPoint(e.clientX, e.clientY), over = el && el.closest && el.closest("#mGrid .mtile");
+    if (!over || over.dataset.id === st.id) return;
+    var from = st.order.indexOf(st.id), to = st.order.indexOf(over.dataset.id);
+    st.order.splice(from, 1); st.order.splice(to, 0, st.id); redraw();
+  }, {passive:false});
+  function end(e){
+    if (!st) return; clearTimeout(st.timer); var s0 = st; st = null;
+    if (s0.drag){
+      if (s0.ghost) s0.ghost.remove(); var g = document.getElementById("mGrid"); if (g) g.classList.remove("dragging");
+      var changed = s0.order.join() !== navOrder().join();
+      if (changed){ saveNavOrder(s0.order); renderNav(); render(); toast(s0.order.slice(0, 3).indexOf(s0.id) >= 0 ? PAGES[s0.id].n + " est dans ta barre." : "Rangement enregistré."); }
+      var gg = document.getElementById("mGrid"); if (gg) gg.innerHTML = moreGridHTML(navOrder());
+      return;
+    }
+    if (!s0.moved && e.type === "pointerup") goPage(s0.id);
+  }
+  document.addEventListener("pointerup", end); document.addEventListener("pointercancel", end);
+  document.addEventListener("contextmenu", function(e){ if (e.target.closest && e.target.closest("#mGrid")) e.preventDefault(); });
+})();
 /* ---------- panneau d'ajout (bouton + au milieu) ---------- */
 function addOpen(){
   var root = document.getElementById("addRoot"), slot = document.getElementById("addSlot");
@@ -1921,7 +2050,7 @@ function addFit(){
   sh.style.marginBottom = off + "px"; sh.style.maxHeight = ((vv ? vv.height : window.innerHeight) - 24) + "px";
 }
 if (window.visualViewport){ window.visualViewport.addEventListener("resize", addFit); window.visualViewport.addEventListener("scroll", addFit); }
-document.addEventListener("keydown", function(e){ if (e.key === "Escape" && !document.getElementById("addRoot").hidden) addClose(); });
+document.addEventListener("keydown", function(e){ if (e.key === "Escape"){ if (!document.getElementById("addRoot").hidden) addClose(); moreClose(); } });
 function cancelPreview(){
   var input = document.getElementById("captureInput"); if (CP) input.value = CP.text;
   CP = null; renderPreview(); input.focus();
@@ -2708,7 +2837,9 @@ document.addEventListener("click", function(e){
   if (act === "export"){ exportBackup(); return; }
   if (act === "bday-edit"){ bdayEditSheet(id); return; }
   if (act === "ev-edit"){ eventEditSheet(b.dataset.gid || null, b.dataset.id || null); return; }
-  if (act === "add-open"){ addOpen(); return; }
+  if (act === "add-open"){ moreClose(); addOpen(); return; }
+  if (act === "more-open"){ moreOpen(); return; }
+  if (act === "more-close"){ moreClose(); return; }
   if (act === "add-close"){ addClose(); return; }
   if (act === "ev-open"){ openEvent(b.dataset.gid || null, b.dataset.id || null, b.dataset.d || null); return; }
   if (act === "ev-close"){ closeEvent(); return; }
@@ -2759,7 +2890,7 @@ function route(){
   S.view = TABS.indexOf(hsh) >= 0 ? hsh : "accueil";
   render(); window.scrollTo(0,0);
   if (prev && prev !== S.view){
-    var app = document.getElementById("app"), cls = TABS.indexOf(S.view) > TABS.indexOf(prev) ? "slide-next" : "slide-prev";
+    var app = document.getElementById("app"), cls = viewOrder().indexOf(S.view) > viewOrder().indexOf(prev) ? "slide-next" : "slide-prev";
     app.classList.remove("slide-next","slide-prev"); void app.offsetWidth; app.classList.add(cls);
     setTimeout(function(){ app.classList.remove(cls); }, 300);
   }
@@ -2776,9 +2907,9 @@ function route(){
     if (x0 === null) return;
     var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
     if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - t0 > 700) return;
-    var i = TABS.indexOf(S.view) + (dx < 0 ? 1 : -1);
-    if (i < 0 || i >= TABS.length) return;
-    location.hash = TABS[i];
+    var VO = viewOrder(), i = VO.indexOf(S.view) + (dx < 0 ? 1 : -1);
+    if (i < 0 || i >= VO.length) return;
+    location.hash = VO[i];
   }, {passive:true});
 })();
 /* ordinateur : flèches gauche / droite du clavier pour changer de page */
@@ -2786,8 +2917,8 @@ document.addEventListener("keydown", function(e){
   if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.altKey || e.ctrlKey || e.metaKey) return;
   if (document.querySelector(".sheet-wrap,.levelup,.note-editor,.draw-pad")) return;
   var a = document.activeElement; if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
-  var i = TABS.indexOf(S.view) + (e.key === "ArrowRight" ? 1 : -1);
-  if (i >= 0 && i < TABS.length){ e.preventDefault(); location.hash = TABS[i]; }
+  var VO = viewOrder(), i = VO.indexOf(S.view) + (e.key === "ArrowRight" ? 1 : -1);
+  if (i >= 0 && i < VO.length){ e.preventDefault(); location.hash = VO[i]; }
 });
 /* ordinateur : la molette fait défiler les rangées de bulles horizontalement */
 document.addEventListener("wheel", function(e){
