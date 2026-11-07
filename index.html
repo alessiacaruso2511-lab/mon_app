@@ -665,6 +665,12 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mgrid.dragging .mtile:not(.ph) i{animation:wig .32s ease-in-out infinite alternate}
 @keyframes wig{from{transform:rotate(-2.5deg)}to{transform:rotate(2.5deg)}}
 @media (prefers-reduced-motion:reduce){.mgrid.dragging .mtile i{animation:none}}
+
+/* Planner_0.10 : poignée plus grande pour tirer le panneau vers le bas */
+.add-grab{width:48px!important;height:5px!important;margin:0 auto!important;position:relative}
+.add-grab::before{content:"";position:absolute;left:-60px;right:-60px;top:-12px;bottom:-14px}
+.more-sheet .add-head,.add-sheet .add-head{touch-action:none;padding-top:10px}
+.more-sheet,.add-sheet{overscroll-behavior:contain}
 </style>
 </head>
 <body>
@@ -711,7 +717,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.9";
+var APP_VERSION = "Planner_0.10";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1921,7 +1927,7 @@ function updatePreviewOut(){
 /* ---------- Menu du bas (Planner_0.9) : 3 pages au choix + bouton + + « Plus » ---------- */
 var NAV_IC = {accueil:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/><path d="M10 20v-5h4v5"/></svg>',quetes:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6"/><path d="M7 4a2 2 0 0 0-2 2v2h2M6 20a2 2 0 0 1-2-2v-1h10v1a2 2 0 0 0 2 2M10 9h5M10 13h5"/></svg>',fiche:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',gazette:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1z"/><path d="M17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 16h4"/></svg>',notes:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/></svg>',
   mois:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
-  reglages:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>',
+  reglages:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>'};
 var PAGES = {
   accueil:{n:"Aujourd'hui", view:true, k:null},
@@ -1965,7 +1971,7 @@ function moreGridHTML(o){
 }
 function moreOpen(){
   var root = document.getElementById("moreRoot");
-  root.innerHTML = '<div class="more-wrap" data-act="more-close"><div class="more-sheet" role="dialog" aria-modal="true" aria-labelledby="moreT" onclick="event.stopPropagation()">'
+  root.innerHTML = '<div class="more-wrap"><div class="more-sheet" id="moreSheet" role="dialog" aria-modal="true" aria-labelledby="moreT">'
     + '<span class="add-grab" aria-hidden="true"></span><div class="add-head"><h2 id="moreT">Toutes mes pages</h2><button type="button" class="close" data-act="more-close" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'
     + '<p class="add-tip" style="margin:0 0 12px">Maintiens une page puis fais-la glisser pour la ranger. Les 3 premières sont dans ta barre du bas.</p>'
     + '<div class="mgrid" id="mGrid">' + moreGridHTML(navOrder()) + '</div></div></div>';
@@ -1978,6 +1984,39 @@ function goPage(id){
   if (p.view){ location.hash = id; return; }
   var bt = document.createElement("button"); bt.type = "button"; bt.dataset.act = p.act; bt.hidden = true; document.body.appendChild(bt); bt.click(); bt.remove();
 }
+/* panneaux du bas : toucher le fond ou glisser vers le bas pour fermer */
+document.addEventListener("click", function(e){
+  if (e.target.classList && e.target.classList.contains("more-wrap")) moreClose();
+  if (e.target.classList && e.target.classList.contains("add-wrap")) addClose();
+});
+(function(){
+  var d = null;
+  function start(target, y){
+    var sh = target.closest && target.closest(".more-sheet,.add-sheet"); if (!sh) return;
+    var onHead = target.closest(".add-grab,.add-head") && !target.closest("button");
+    var onBody = sh.scrollTop <= 0 && !target.closest(".mtile,input,textarea,select,button,label,.cap-prev");
+    if (onHead || onBody) d = {sh:sh, y:y, t:Date.now(), dy:0, on:false};
+  }
+  function move(y, ev){
+    if (!d) return; var dy = y - d.y;
+    if (!d.on){ if (dy > 8) { d.on = true; d.sh.style.transition = "none"; } else if (dy < -8) { d = null; return; } else return; }
+    d.dy = Math.max(0, dy); d.sh.style.transform = "translateY(" + d.dy + "px)"; if (ev.cancelable) ev.preventDefault();
+  }
+  function up(){
+    if (!d) return; var x = d; d = null; if (!x.on) return;
+    var fast = x.dy / Math.max(1, Date.now() - x.t) > 0.6;
+    if (x.dy > 110 || (fast && x.dy > 40)){
+      x.sh.style.transition = "transform .2s ease-in"; x.sh.style.transform = "translateY(100%)";
+      setTimeout(function(){ x.sh.style.transform = ""; x.sh.style.transition = ""; if (x.sh.id === "moreSheet") moreClose(); else addClose(); }, 190);
+    } else { x.sh.style.transition = "transform .2s ease-out"; x.sh.style.transform = ""; setTimeout(function(){ x.sh.style.transition = ""; }, 220); }
+  }
+  document.addEventListener("touchstart", function(e){ if (e.touches.length === 1) start(e.target, e.touches[0].clientY); }, {passive:true});
+  document.addEventListener("touchmove", function(e){ if (d) move(e.touches[0].clientY, e); }, {passive:false});
+  document.addEventListener("touchend", up); document.addEventListener("touchcancel", up);
+  document.addEventListener("pointerdown", function(e){ if (e.pointerType === "mouse") start(e.target, e.clientY); });
+  document.addEventListener("pointermove", function(e){ if (e.pointerType === "mouse" && d) move(e.clientY, e); });
+  document.addEventListener("pointerup", function(e){ if (e.pointerType === "mouse") up(); });
+})();
 /* glisser-déposer dans la grille : appui long, puis on déplace */
 (function(){
   var st = null;
