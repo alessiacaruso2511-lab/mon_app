@@ -704,6 +704,13 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mpills em{font-style:normal;font-size:10px;font-weight:800;color:var(--muted);padding-left:3px;text-align:left}
 .mcell.past .mpills{opacity:.5}
 .mcell.sel{background:#F7F7FA}
+.mcell.vac{background:#E9F9F7;box-shadow:inset 0 0 0 2px #3FC9C0;border-top:0!important;border-radius:10px;margin:2px 1.5px}
+.mcell.vac.sel{background:#D9F3EF}
+.mcell.vac .mpills{padding:0 4px}
+.mcell.vac.past{opacity:.6}
+.mvac{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:2px;color:#1C7A6F;min-width:0;padding:0 2px}
+.mvac b{display:block;max-width:100%;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-multi{border:0;background:none;padding:2px 0;font:inherit;font-size:13.5px;font-weight:800;color:#2C679C;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 @media (min-width:760px){.mcell{min-height:104px}.mpills i,.mpills em{font-size:11.5px;padding:3px 5px}}
 </style>
 </head>
@@ -751,7 +758,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.15";
+var APP_VERSION = "Planner_0.16";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -786,6 +793,16 @@ function addDays(d, n){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDat
 function today(){ var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
 function diffDays(a, b){ return Math.round((b - a) / 86400000); }
 function cap(s){ s = String(s||""); return s.charAt(0).toUpperCase() + s.slice(1); }
+function rangeText(a, b){ var x = parseISO(a), y = parseISO(b), j = function(d){ return d.getDate() === 1 ? "1er" : d.getDate(); }; return "du " + JOURS_L[x.getDay()] + " " + j(x) + " " + MOIS[x.getMonth()] + (x.getFullYear() !== y.getFullYear() ? " " + x.getFullYear() : "") + " au " + JOURS_L[y.getDay()] + " " + j(y) + " " + MOIS[y.getMonth()] + (x.getFullYear() !== y.getFullYear() ? " " + y.getFullYear() : ""); }
+var TRIP_RE = /\b(voyage|vacances|s[ée]jour|cong[ée]s|trip|escapade|week-?end|road ?trip)\b/i;
+function tripOf(e){
+  if (!e || !e.endDate || !TRIP_RE.test(e.title || "")) return null;
+  var core = String(e.title).split(/\s+-\s+|\s*\(/)[0], m = core.match(/(?:^|\s)(?:à|a|au|aux|en)\s+(.+)$/i);
+  var dest = m ? m[1].replace(/\s+avec\s+.*$/i, "").trim() : "";
+  if (!dest || TRIP_RE.test(dest)) dest = (e.meta || e.place || e.location || "").split(",")[0].trim();
+  return {dest: dest || "Vacances"};
+}
+var WAVE_IC = '<svg width="22" height="14" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M2 5c2.5-2.4 4.5-2.4 7 0s4.5 2.4 7 0 4.5-2.4 6 0M2 11c2.5-2.4 4.5-2.4 7 0s4.5 2.4 7 0 4.5-2.4 6 0"/></svg>';
 function fmtDay(d){ return JOURS_L[d.getDay()] + " " + d.getDate() + " " + MOIS[d.getMonth()]; }
 function fmtTime(t){ if(!t) return ""; var p = t.split(":"); return (+p[0]) + "h" + (p[1] && p[1] !== "00" ? p[1] : (p[1] === "00" ? "" : "")); }
 function initial(n){ return h(String(n||"?").trim().charAt(0).toUpperCase()); }
@@ -934,12 +951,12 @@ function evCard(e){
 }
 function eventsOn(dIso){
   var all = gcalAll();
-  var list = all.filter(function(e){ return e.date === dIso; }).map(function(e){
+  var list = all.filter(function(e){ return e.date === dIso || (e.endDate && e.date < dIso && dIso <= e.endDate); }).map(function(e){
     var cat = catFromColor(e.colorId, e.rappel); if (!cat){ var sp = splitTitle(e.title, e.location); cat = guessCat(sp.core, sp.place, sp.people, e.rappel); }
-    return {title:e.title, time:e.time, endTime:e.endTime, meta:e.location, src:"gcal", gid:e.id, cat:cat, colorId:e.colorId || null, desc:e.desc || "", rem:e.rem, date:e.date};
+    return {title:e.title, time:e.time, endTime:e.endTime, meta:e.location, src:"gcal", gid:e.id, cat:cat, colorId:e.colorId || null, desc:e.desc || "", rem:e.rem, date:e.date, endDate:e.endDate || null};
   });
   S.items.forEach(function(i){
-    if (i.kind === "event" && i.date === dIso){ var sp2 = splitTitle(i.title, i.place); list.push({title:i.title, time:i.time, endTime:i.endTime, place:i.place, todo:!i.time, id:i._id, src:"draft", unsynced:i.unsynced, cat:i.cat || guessCat(sp2.core, sp2.place, sp2.people), date:i.date}); }
+    if (i.kind === "event" && (i.date === dIso || (i.endDate && i.date < dIso && dIso <= i.endDate))){ var sp2 = splitTitle(i.title, i.place); list.push({title:i.title, time:i.time, endTime:i.endTime, endDate:i.endDate || null, place:i.place, todo:!i.time && !i.endDate, id:i._id, src:"draft", unsynced:i.unsynced, cat:i.cat || guessCat(sp2.core, sp2.place, sp2.people), date:i.date}); }
     if (i.kind === "followup" && !i.done && i.date === dIso) list.push({title:i.title, meta:"Prendre des nouvelles", note:"Prendre des nouvelles", src:"follow", cat:"famille"});
     if (i.kind === "birthday" && i.md && i.md === dIso.slice(5) && !all.some(function(e){ return e.date === dIso && /anniv/i.test(e.title) && e.title.indexOf(i.person||"@@") >= 0; })) list.push({title:"Anniversaire de " + i.person, meta:"Toute la journée", src:"bday", cat:"famille"});
   });
@@ -1189,8 +1206,10 @@ function openEvent(gid, did, d, quiet){
   var e = findEv(gid, did, d); if (!e) return;
   S.evOpen = {gid:gid, did:did, d:e.date};
   var cat = e.cat || "neutre", C = CAT_COL[cat] || CAT_COL.neutre, sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
+  var trip = tripOf(e); if (trip) C = ["#CDEFEA", "#1C7A6F", "#8FDCD1"];
   var dd = parseISO(e.date), when = cap(JOURS[dd.getDay()].replace(".", "")) + " " + dd.getDate() + " " + MOIS_COURT[dd.getMonth()].toLowerCase();
   var tm = e.time ? fmtTime(e.time) + (e.endTime && minsOf(e.endTime) - minsOf(e.time) !== 60 ? " → " + fmtTime(e.endTime) : "") : "Journée";
+  if (e.endDate){ var de = parseISO(e.endDate), nn = Math.round((de - dd) / 86400000); when = dd.getDate() + " " + MOIS_COURT[dd.getMonth()].toLowerCase() + " → " + (de.getDate() === 1 ? "1er" : de.getDate()) + " " + MOIS_COURT[de.getMonth()].toLowerCase(); tm = nn + " nuit" + (nn > 1 ? "s" : ""); }
   var CAL_I = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
   var CLK_I = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>';
   var PPL_I = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.5"/><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5M14.5 14.6c2.6-.4 4.9 1.1 5.8 4.4"/></svg>';
@@ -1199,8 +1218,8 @@ function openEvent(gid, did, d, quiet){
   var done = !!doneEvs()[evKey(e)];
   var html = '<div class="evp' + (quiet ? " still" : "") + '" role="dialog" aria-modal="true" aria-labelledby="evpT">'
     + '<div class="evp-top" style="background:linear-gradient(170deg,' + C[0] + ' 0%,' + C[2] + ' 100%);color:' + C[1] + '">'
-    + '<div class="evp-bar"><button type="button" class="evp-round" data-act="ev-close" aria-label="Retour"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><span class="evp-round">' + (CATS[cat] || CATS.neutre).ic + '</span></div>'
-    + '<small>' + h((CATS[cat] || CATS.neutre).n) + '</small><h1 id="evpT">' + h(sp.core) + '</h1>' + (sp.place ? '<p>' + PIN_IC + h(sp.place) + '</p>' : "") + '</div>'
+    + '<div class="evp-bar"><button type="button" class="evp-round" data-act="ev-close" aria-label="Retour"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><span class="evp-round">' + (trip ? WAVE_IC : (CATS[cat] || CATS.neutre).ic) + '</span></div>'
+    + '<small>' + h(trip ? "Vacances" : (CATS[cat] || CATS.neutre).n) + '</small><h1 id="evpT">' + h(sp.core) + '</h1>' + (sp.place ? '<p>' + PIN_IC + h(sp.place) + '</p>' : "") + '</div>'
     + '<div class="evp-sheet"><div class="evp-pills"><span>' + CAL_I + h(when) + '</span><span>' + CLK_I + h(tm) + '</span>' + (sp.people.length ? '<span>' + PPL_I + h(sp.people.join(" + ")) + '</span>' : "") + '</div>'
     + (e.desc ? '<h3>Note</h3><p class="evp-desc">' + h(e.desc.replace(/<[^>]+>/g, " ")) + '</p>' : "")
     + '<h3>Rappel</h3><div class="evp-rem"><span class="evp-ri">' + BELL_I + '</span><span><b>' + h(r.t) + '</b>' + (r.s ? '<em>' + h(r.s) + '</em>' : "") + '</span></div>'
@@ -1390,9 +1409,10 @@ function normEvents(payload){
   var evs = (payload && payload.events) || [];
   return evs.filter(function(e){ return e.status !== "cancelled"; }).map(function(e){
     var s = e.start || {}, dt = s.dateTime || "", d = dt ? dt.slice(0,10) : (s.date || "");
-    var en = e.end || {}, edt = en.dateTime || "";
+    var en = e.end || {}, edt = en.dateTime || "", ed = null;
+    if (!dt && en.date && d){ ed = iso(addDays(parseISO(en.date), -1)); if (ed <= d) ed = null; }
     var ov = e.reminders && !e.reminders.useDefault && e.reminders.overrides || [];
-    return {id:e.id, title:e.summary || "Sans titre", date:d, time: dt ? dt.slice(11,16) : null, endTime: edt ? edt.slice(11,16) : null, location:e.location || "", allDay:!dt, recurring:!!e.recurringEventId, colorId:e.colorId || null, rappel: ov.length === 1 && ov[0].minutes === 0, desc:e.description || "", rem: e.reminders && e.reminders.useDefault ? null : ov.map(function(o){ return o.minutes; })};
+    return {id:e.id, title:e.summary || "Sans titre", date:d, time: dt ? dt.slice(11,16) : null, endTime: edt ? edt.slice(11,16) : null, location:e.location || "", allDay:!dt, endDate:ed, recurring:!!e.recurringEventId, colorId:e.colorId || null, rappel: ov.length === 1 && ov[0].minutes === 0, desc:e.description || "", rem: e.reminders && e.reminders.useDefault ? null : ov.map(function(o){ return o.minutes; })};
   });
 }
 var calRange = null;
@@ -1426,7 +1446,7 @@ function createCalEvent(o){
   if (!mcp) return Promise.reject({code:"not_granted"});
   var input = {calendarId:CAL, summary:o.title};
   if (o.time){ input.startTime = o.date + "T" + o.time + ":00"; input.endTime = o.endTime ? o.date + "T" + o.endTime + ":00" : endOf(o.date, o.time); input.overrideReminders = reminders(o.time, o.date, o.reminder); }
-  else { input.allDay = true; input.startTime = o.date + "T00:00:00"; input.endTime = iso(addDays(parseISO(o.date),1)) + "T00:00:00"; input.overrideReminders = [{method:"popup",minutes:19620},{method:"popup",minutes:9540},{method:"popup",minutes:300}]; }
+  else { input.allDay = true; input.startTime = o.date + "T00:00:00"; input.endTime = iso(addDays(parseISO(o.endDate && o.endDate > o.date ? o.endDate : o.date),1)) + "T00:00:00"; input.overrideReminders = [{method:"popup",minutes:19620},{method:"popup",minutes:9540},{method:"popup",minutes:300}]; }
   if (o.yearly) input.recurrenceData = ["RRULE:FREQ=YEARLY"];
   if (o.place) input.location = o.place;
   if (o.cat && CATS[o.cat] && CATS[o.cat].color) input.colorId = CATS[o.cat].color;
@@ -1600,6 +1620,24 @@ function localParse(text){
   text = wordsToDigits(text);
   var nc = parseNoteCmd(text); if (nc) return nc;
   var s = text.toLowerCase().trim(), n = noAcc(s), t = today(), date = null, time = null, endTime = null;
+  /* période : « du 20 décembre au 1er janvier », « du 3 au 7 mars », « du 20/12 au 01/01 » */
+  var MRX = "(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)", WDX = "(?:(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\\s+)?";
+  var rg = n.match(new RegExp("(?:^|\\s)(?:du|de)\\s+" + WDX + "(\\d{1,2})(?:er)?(?:\\s+" + MRX + "|\\/(\\d{1,2}))?\\s+(?:au|jusqu['’]au)\\s+" + WDX + "(\\d{1,2})(?:er)?(?:\\s+" + MRX + "|\\/(\\d{1,2}))?(?:\\s+(20\\d\\d))?(?!\\s*(?:h\\b|heures?|:|\\d))")), rgS = null, rgE = null;
+  if (rg){
+    var mo = function(nm, num){ return nm ? MOIS_N.indexOf(nm) : num ? +num - 1 : null; };
+    var d1 = +rg[1], d2 = +rg[4], m1 = mo(rg[2], rg[3]), m2 = mo(rg[5], rg[6]), yy = rg[7] ? +rg[7] : t.getFullYear();
+    if (m1 == null) m1 = m2;
+    if (m1 == null){ m1 = t.getMonth() + (d1 < t.getDate() ? 1 : 0); m2 = m1 + (d2 < d1 ? 1 : 0); }
+    if (m2 == null) m2 = m1;
+    var a0 = new Date(yy, m1, d1); if (!rg[7] && a0 < t) a0 = new Date(yy + 1, m1, d1);
+    var b0 = new Date(a0.getFullYear(), m2, d2); if (b0 < a0) b0 = new Date(a0.getFullYear() + 1, m2, d2);
+    if (d1 >= 1 && d1 <= 31 && d2 >= 1 && d2 <= 31 && b0 > a0 && a0.getDate() === d1 && b0.getDate() === d2){
+      rgS = a0; rgE = b0;
+      var lead = text.length - text.replace(/^\s+/, "").length;
+      if (noAcc(s).length === s.length) text = (text.slice(0, lead + rg.index) + " " + text.slice(lead + rg.index + rg[0].length)).replace(/\s{2,}/g, " ").trim();
+      text = text.replace(/^\s*(?:je\s+(?:serai|serais|suis|pars|vais\s+[êe]tre)\s+)?en\s+(?=(?:voyage|vacances|week-?end|s[ée]jour|cong[ée]s)\b)/i, "");
+    }
+  }
   var tm = s.match(/(\d{1,2})\s*(?:heures?|h|:)\s*(\d{2})?(?:\s*(?:à|a|-)\s*(\d{1,2})\s*(?:heures?|h|:)\s*(\d{2})?)?/);
   if (tm){ time = pad(+tm[1]) + ":" + (tm[2] || "00"); if (tm[3]) endTime = pad(+tm[3]) + ":" + (tm[4] || "00"); }
   else {
@@ -1626,6 +1664,7 @@ function localParse(text){
   var dm = n.match(/\b(\d{1,2})(?:er)?\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)/);
   if (dm){ date = null; var mi = MOIS_N.indexOf(dm[2]); var dd = new Date(t.getFullYear(), mi, +dm[1]); if (dd < t) dd = new Date(t.getFullYear()+1, mi, +dm[1]); date = dd; }
   var sl = n.match(/\b(\d{1,2})\/(\d{1,2})\b/); if (!date && sl){ var d2 = new Date(t.getFullYear(), +sl[2]-1, +sl[1]); if (d2 < t) d2 = new Date(t.getFullYear()+1, +sl[2]-1, +sl[1]); date = d2; }
+  if (rgS){ date = rgS; time = null; endTime = null; }
   var title = cap(stripWords(text) || text);
   /* anniversaire */
   if (/anniv/.test(n)){
@@ -1651,7 +1690,7 @@ function localParse(text){
   /* rendez-vous daté */
   if (date){
     var rappel = /\brappel|\brappelle|fais[- ]moi penser|alarme/.test(n), st2 = splitStructure(stripWords(text) || text);
-    return {kind:"event", core:st2.core, people:st2.people, place:st2.place, placeRaw:st2.placeRaw, title:eventTitle({core:st2.core, people:st2.people, place:st2.place, time:time}), date:iso(date), time:time, endTime:endTime, xp:0, reminder:rappel};
+    return {kind:"event", core:st2.core, people:st2.people, place:st2.place, placeRaw:st2.placeRaw, title:eventTitle({core:st2.core, people:st2.people, place:st2.place, time:time}), date:iso(date), endDate: rgE ? iso(rgE) : null, time:time, endTime:endTime, xp:0, reminder:rappel};
   }
   /* sinon : une quête */
   title = rewriteCore(title);
@@ -1751,7 +1790,7 @@ function rewriteCore(core){ var L = learnData(), k = normS(core); return L.rewri
 function fieldsOf(r, text){
   var core = r.core != null ? r.core : (r.kind === "note" ? (r.title || "") : r.kind === "birthday" ? (r.person || "") : (r.title || ""));
   if (r.kind === "exploit" || r.kind === "contact") core = r.title || "";
-  return {kind:r.kind, core:core, people:(r.people || []).join(", "), place:r.place || "", placeRaw:r.placeRaw || null, date:r.date || "", time:r.time || "", endTime:r.endTime || "", reminder:!!r.reminder,
+  return {kind:r.kind, core:core, people:(r.people || []).join(", "), place:r.place || "", placeRaw:r.placeRaw || null, date:r.date || "", endDate:r.endDate || "", time:r.time || "", endTime:r.endTime || "", reminder:!!r.reminder,
     noteTitle:r.kind === "note" ? (r.title || "") : "", noteBody:r.kind === "note" ? (r.items && r.items.length ? r.items.join(", ") : (r.text || "")) : "", todo:!!(r.todo || (r.items && r.items.length)),
     person:r.person || "", cat:r.cat || null, catManual:false, orig:r};
 }
@@ -1768,9 +1807,9 @@ function buildFinal(F, text){
   var o = F.orig || {}, t = cap((F.core || "").trim());
   switch (F.kind){
     case "event":
-      var ppl = splitPeople(F.people), tm = F.time || null;
+      var ppl = splitPeople(F.people), d0 = F.date || iso(today()), ed = F.endDate && F.endDate > d0 ? F.endDate : null, tm = ed ? null : (F.time || null);
       t = stripWithFromCore(t, ppl);
-      return {kind:"event", core:t, people:ppl, place:(F.place || "").trim(), title:eventTitle({core:t, people:ppl, place:(F.place || "").trim(), time:tm}), date:F.date || iso(today()), time:tm, endTime: tm && tm === (o.time || null) ? (o.endTime || null) : null, reminder:F.reminder, cat: F.catManual && F.cat ? F.cat : guessCatPlain(F), xp:0};
+      return {kind:"event", core:t, people:ppl, place:(F.place || "").trim(), title:eventTitle({core:t, people:ppl, place:(F.place || "").trim(), time:tm}), date:d0, endDate:ed, time:tm, endTime: tm && tm === (o.time || null) ? (o.endTime || null) : null, reminder:F.reminder, cat: F.catManual && F.cat ? F.cat : guessCatPlain(F), xp:0};
     case "quest": return {kind:"quest", title:t, steps:questSteps(t), xp:questXP(t), stat:guessStat(text)};
     case "exploit": var st = guessStat(text); return {kind:"exploit", title:t, xp:exploitXP(text), stat:st, skill:skillOf(text)};
     case "birthday": return {kind:"birthday", person:cap((F.person || F.core || "").trim()), date:F.date || null, title:"Anniversaire", xp:0};
@@ -1834,10 +1873,10 @@ function commit(r){
   var base = {title: cap(r.title || ""), createdAt: nowISO()};
   if (r.kind === "event"){
     if (!r.date){ r.kind = "quest"; return commit(r); }
-    if (!r.time) return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:null, place:r.place || null, cat:r.cat || null})).then(function(){ toast("Noté. Il manque l'heure : touche « À compléter » quand tu la sais."); });
-    return createCalEvent({title:base.title, date:r.date, time:r.time, endTime:r.endTime, reminder:r.reminder, place:r.place || null, cat:r.cat || null}).then(function(){ toast("Ajouté à ton agenda. " + remindersText(reminders(r.time, r.date, r.reminder))); }).catch(function(e){
+    if (!r.time && !r.endDate) return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:null, place:r.place || null, cat:r.cat || null})).then(function(){ toast("Noté. Il manque l'heure : touche « À compléter » quand tu la sais."); });
+    return createCalEvent({title:base.title, date:r.date, endDate:r.endDate || null, time:r.endDate ? null : r.time, endTime:r.endTime, reminder:r.reminder, place:r.place || null, cat:r.cat || null}).then(function(){ toast(r.endDate ? "Ajouté à ton agenda, " + rangeText(r.date, r.endDate) + "." : "Ajouté à ton agenda. " + remindersText(reminders(r.time, r.date, r.reminder))); afterCalChange(); }).catch(function(e){
       toast(calWriteMsg(e)); if (e && (e.code === "server_unavailable" || e.code === "upstream_error")) return;
-      return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, time:r.time, endTime:r.endTime || null, place:r.place || null, cat:r.cat || null, unsynced:true}));
+      return db.collection("items").add(Object.assign(base, {kind:"event", date:r.date, endDate:r.endDate || null, time:r.endDate ? null : r.time, endTime:r.endTime || null, place:r.place || null, cat:r.cat || null, unsynced:true}));
     });
   }
   if (r.kind === "birthday"){
@@ -1916,7 +1955,8 @@ function renderPreview(first){
   if (kinds.indexOf(CP.F0.kind) < 0) kinds.push(CP.F0.kind);
   var chips = kinds.map(function(k){ return '<button type="button" data-cpk="' + k + '" aria-pressed="' + (F.kind === k) + '">' + KIND_LBL[k] + '</button>'; }).join("");
   var f = "";
-  if (F.kind === "event") f = cpField("cpCore", "Quoi", F.core, "text", true) + cpField("cpWith", "Avec", F.people, "text", false, "Prénoms") + cpField("cpWhere", "Où", F.place, "text", false, "Lieu") + cpField("cpDate", "Jour", F.date, "date") + cpField("cpTime", "Heure", F.time, "time")
+  if (F.kind === "event") f = cpField("cpCore", "Quoi", F.core, "text", true) + cpField("cpWith", "Avec", F.people, "text", false, "Prénoms") + cpField("cpWhere", "Où", F.place, "text", false, "Lieu") + (F.endDate ? cpField("cpDate", "Du", F.date, "date") + cpField("cpEnd", "Au", F.endDate, "date") : cpField("cpDate", "Jour", F.date, "date") + cpField("cpTime", "Heure", F.time, "time"))
+    + '<div class="wide"><button type="button" class="cp-multi" data-cpmulti>' + (F.endDate ? "Un seul jour" : "Sur plusieurs jours") + '</button></div>'
     + '<div class="wide"><p class="cat-lbl">Domaine</p><div class="cat-chips" id="cpCats">' + catChips(F.catManual && F.cat ? F.cat : guessCatPlain(F)) + '</div></div>';
   else if (F.kind === "birthday") f = cpField("cpPerson", "De qui", F.person || F.core, "text", true) + cpField("cpDate", "Date", F.date, "date", true);
   else if (F.kind === "note") f = cpField("cpNoteTitle", "Titre de la note", F.noteTitle, "text", true, "Sans titre")
@@ -1933,6 +1973,7 @@ function renderPreview(first){
   box.querySelectorAll("[data-cpk]").forEach(function(b){ b.onclick = function(){ readPreview(); var k = b.dataset.cpk; F.kind = k; if ((k === "event" || k === "birthday") && !F.date) F.date = iso(today()); if (k === "birthday" && !F.person) F.person = F.core; if (k === "note" && !F.noteBody && CP.F0.kind !== "note"){ var fn = freeNote(stripPolite(CP.text).replace(/^(?:(?:cr[ée]{1,2}(?:r|s|z)?|fais|écris|ecris|prends|mets|ajoute)[\s-]+)?(?:moi\s+)?(?:une\s+)?(?:nouvelle\s+)?note\s*(?:pour\s+(?:noter|dire|retenir)\s+)?(?:que\s+|qu['’]\s*)?/i, "")); F.noteBody = fn.text; if (!F.noteTitle) F.noteTitle = fn.title; F.todo = false; } renderPreview(false); }; });
   box.querySelectorAll("input,textarea").forEach(function(inp){ inp.addEventListener("input", function(){ readPreview(); updatePreviewOut(); refreshCatChips(); }); if (inp.tagName === "INPUT") inp.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); validatePreview(); } }); });
   box.querySelectorAll("[data-cat]").forEach(function(b){ b.onclick = function(){ readPreview(); F.cat = b.dataset.cat; F.catManual = true; refreshCatChips(); }; });
+  var mb = box.querySelector("[data-cpmulti]"); if (mb) mb.onclick = function(){ readPreview(); if (F.endDate) F.endDate = ""; else { F.endDate = iso(addDays(parseISO(F.date || iso(today())), 1)); F.time = ""; } renderPreview(false); };
   box.querySelector('[data-cp="cancel"]').onclick = cancelPreview;
   box.querySelector('[data-cp="ok"]').onclick = validatePreview;
   if (first){ var ci = document.getElementById("captureInput"); if (document.activeElement === ci) ci.blur(); setTimeout(function(){ try { box.scrollIntoView({block:"nearest", behavior: REDUCED ? "auto" : "smooth"}); } catch(e){} }, 60); }
@@ -1949,6 +1990,7 @@ function readPreview(){
   if (v("cpWhere") != null) F.place = v("cpWhere");
   if (v("cpDate") != null) F.date = v("cpDate");
   if (v("cpTime") != null) F.time = v("cpTime");
+  if (v("cpEnd") != null) F.endDate = v("cpEnd");
   if (v("cpPerson") != null) F.person = v("cpPerson");
   if (v("cpNoteTitle") != null) F.noteTitle = v("cpNoteTitle");
   if (v("cpNoteBody") != null) F.noteBody = v("cpNoteBody");
@@ -1957,7 +1999,7 @@ function updatePreviewOut(){
   var out = document.getElementById("cpOut"); if (!out || !CP) return;
   var r = buildFinal(CP.F, CP.text);
   out.hidden = r.kind === "note";
-  out.innerHTML = r.kind === "event" ? '<b>' + h(r.title || "Sans titre") + '</b>' + (r.date ? ' · ' + h(fmtDay(parseISO(r.date))) : "") + (r.place ? '<br>Lieu dans ton agenda : ' + h(r.place) : "")
+  out.innerHTML = r.kind === "event" ? '<b>' + h(r.title || "Sans titre") + '</b>' + (r.date ? ' · ' + h(r.endDate ? rangeText(r.date, r.endDate) : fmtDay(parseISO(r.date))) : "") + (r.place ? '<br>Lieu dans ton agenda : ' + h(r.place) : "")
     : '<b>' + h(describe(r)) + '</b>';
 }
 
@@ -2254,16 +2296,19 @@ function eventEditSheet(gid, did){
   var g = gid ? gcalAll().find(function(e){ return e.id === gid; }) : null;
   var it = did ? S.items.find(function(i){ return i._id === did; }) : null;
   if (!g && !it) return;
-  var ev = g ? {title:g.title, date:g.date, time:g.time || "", end:g.endTime || "", place:g.location || ""} : {title:it.title, date:it.date, time:it.time || "", end:it.endTime || "", place:it.place || ""};
+  var ev = g ? {title:g.title, date:g.date, endDate:g.endDate || "", time:g.time || "", end:g.endTime || "", place:g.location || ""} : {title:it.title, date:it.date, endDate:it.endDate || "", time:it.time || "", end:it.endTime || "", place:it.place || ""};
   var sp0 = splitTitle(ev.title, ev.place), cat0 = g ? (catFromColor(g.colorId, g.rappel) || guessCat(sp0.core, sp0.place, sp0.people, g.rappel)) : (it.cat || guessCat(sp0.core, sp0.place, sp0.people)), catSel = cat0;
   var note = g && g.recurring ? '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Événement qui se répète : seule cette date sera modifiée.</p>' : "";
   var back = document.querySelector("#sheetRoot #mBody") ? function(){ openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); } : closeSheet;
-  openSheet("Modifier l'événement", note + '<form id="fEvEdit"><div class="field"><label for="eTitle">Titre</label><input id="eTitle" type="text" required value="' + h(ev.title) + '"></div><div class="field"><label for="eDate">Date</label><input id="eDate" type="date" required value="' + h(ev.date) + '"></div><div class="ev-time"><div class="field"><label for="eStart">Début</label><input id="eStart" type="time" value="' + h(ev.time) + '"></div><div class="field"><label for="eEnd">Fin</label><input id="eEnd" type="time" value="' + h(ev.end) + '"></div></div><p style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Sans heure de début, l\'événement dure toute la journée.</p><div class="field"><label for="ePlace">Lieu</label><input id="ePlace" type="text" value="' + h(ev.place) + '" placeholder="Facultatif"></div><div class="field"><p class="cat-lbl" style="margin:0">Domaine</p><div class="cat-chips" id="eCats">' + catChips(cat0) + '</div></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="eDel">Supprimer</button></div></form>', function(){
+  openSheet("Modifier l'événement", note + '<form id="fEvEdit"><div class="field"><label for="eTitle">Titre</label><input id="eTitle" type="text" required value="' + h(ev.title) + '"></div><div class="ev-time"><div class="field"><label for="eDate">Date</label><input id="eDate" type="date" required value="' + h(ev.date) + '"></div><div class="field"><label for="eEndD">Jusqu\'au</label><input id="eEndD" type="date" value="' + h(ev.endDate) + '"></div></div><div class="ev-time"><div class="field"><label for="eStart">Début</label><input id="eStart" type="time" value="' + h(ev.time) + '"></div><div class="field"><label for="eEnd">Fin</label><input id="eEnd" type="time" value="' + h(ev.end) + '"></div></div><p style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Sans heure de début, l\'événement dure toute la journée. « Jusqu\'au » sert aux événements sur plusieurs jours.</p><div class="field"><label for="ePlace">Lieu</label><input id="ePlace" type="text" value="' + h(ev.place) + '" placeholder="Facultatif"></div><div class="field"><p class="cat-lbl" style="margin:0">Domaine</p><div class="cat-chips" id="eCats">' + catChips(cat0) + '</div></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="eDel">Supprimer</button></div></form>', function(){
     document.querySelectorAll("#eCats [data-cat]").forEach(function(b){ b.onclick = function(){ catSel = b.dataset.cat; document.querySelectorAll("#eCats [data-cat]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.cat === catSel)); }); }; });
     document.getElementById("fEvEdit").onsubmit = function(e){
       e.preventDefault();
-      var title = cap(document.getElementById("eTitle").value.trim()), date = document.getElementById("eDate").value, start = document.getElementById("eStart").value, end = document.getElementById("eEnd").value, place = document.getElementById("ePlace").value.trim();
+      var title = cap(document.getElementById("eTitle").value.trim()), date = document.getElementById("eDate").value, start = document.getElementById("eStart").value, end = document.getElementById("eEnd").value, place = document.getElementById("ePlace").value.trim(), endD = document.getElementById("eEndD").value;
       if (!title || !date) return;
+      if (endD && endD < date){ toast("La date de fin doit être après le début."); return; }
+      if (endD && start){ toast("Pour un événement sur plusieurs jours, laisse les heures vides."); return; }
+      if (endD === date) endD = "";
       if (end && !start){ toast("Indique aussi l'heure de début."); return; }
       if (start && end && end <= start){ toast("L'heure de fin doit être après le début."); return; }
       if (g){
@@ -2271,9 +2316,9 @@ function eventEditSheet(gid, did){
         if (catSel !== cat0 || (g.colorId && (g.colorId !== CATS[catSel].color))) body.colorId = CATS[catSel].color || null;
         if (catSel !== cat0){ var Lc = learnData(), wc = keyWords(sp0.core); if (wc.length){ Lc.cats = Lc.cats.filter(function(r){ return r.w.join(" ") !== wc.join(" "); }); Lc.cats.push({w:wc, c:catSel}); saveLearn(Lc); } }
         if (start){ body.start = {dateTime: date + "T" + start + ":00", timeZone:"Europe/Paris"}; body.end = {dateTime: end ? date + "T" + end + ":00" : endOf(date, start), timeZone:"Europe/Paris"}; }
-        else { body.start = {date: date}; body.end = {date: iso(addDays(parseISO(date), 1))}; }
+        else { body.start = {date: date}; body.end = {date: iso(addDays(parseISO(endD || date), 1))}; }
         mcp.callTool(GC, "patch_event", {calendarId:CAL, eventId:gid, body:body}).then(function(){
-          Object.assign(g, {title:title, date:date, time:start || null, endTime:end || null, location:place, allDay:!start}); if ("colorId" in body) g.colorId = body.colorId;
+          Object.assign(g, {title:title, date:date, endDate:endD || null, time:start || null, endTime:end || null, location:place, allDay:!start}); if ("colorId" in body) g.colorId = body.colorId;
           back(); render(); toast("Événement modifié dans ton agenda."); afterCalChange();
         }).catch(function(er){ toast(calWriteMsg(er).replace(/ : le rendez-vous est gardé dans l'appli\.?|le rendez-vous est gardé dans l'appli\.?/,"").trim() || "La modification n'a pas abouti."); });
         return;
@@ -2283,7 +2328,9 @@ function eventEditSheet(gid, did){
         createCalEvent({title:title, date:date, time:start, endTime:end || null, place:place || null, cat:catSel}).then(function(){ return db.collection("items").doc(did).delete(); }).then(function(){ back(); toast("Ajouté à ton agenda avec tes rappels."); afterCalChange(); })
           .catch(function(){ db.collection("items").doc(did).update({title:title, date:date, time:start, endTime:end || null, place:place, cat:catSel, unsynced:true}).then(function(){ back(); toast("Modifié dans l'appli. Il sera à remettre dans l'agenda quand il sera joignable."); }).catch(dbErr); });
       } else {
-        db.collection("items").doc(did).update({title:title, date:date, time:null, endTime:null, place:place, cat:catSel}).then(function(){ back(); toast("Événement modifié."); }).catch(dbErr);
+        if (endD) createCalEvent({title:title, date:date, endDate:endD, time:null, place:place || null, cat:catSel}).then(function(){ return db.collection("items").doc(did).delete(); }).then(function(){ back(); toast("Ajouté à ton agenda, " + rangeText(date, endD) + "."); afterCalChange(); })
+          .catch(function(){ db.collection("items").doc(did).update({title:title, date:date, endDate:endD, time:null, endTime:null, place:place, cat:catSel}).then(function(){ back(); toast("Modifié dans l'appli."); }).catch(dbErr); });
+        else db.collection("items").doc(did).update({title:title, date:date, endDate:null, time:null, endTime:null, place:place, cat:catSel}).then(function(){ back(); toast("Événement modifié."); }).catch(dbErr);
       }
     };
     document.getElementById("eDel").onclick = function(){
@@ -2310,12 +2357,13 @@ function monthHTML(){
   for (var i=0;i<lead;i++) cells.push('<div class="mcell blank" aria-hidden="true"></div>');
   for (var d=1; d<=dim; d++){
     var dt = new Date(m0.getFullYear(), m0.getMonth(), d), di = iso(dt), evs = eventsOn(di);
-    evs.forEach(function(e){ if (e.src === "bday" || /^anniversaire/i.test(e.title)) nBd++; else nEv++; });
-    var cls = "mcell" + (di === iso(t) ? " today" : "") + (di === S.monthSel ? " sel" : "") + (dt < t ? " past" : "");
+    evs.forEach(function(e){ if (e.src === "bday" || /^anniversaire/i.test(e.title)) nBd++; else if (!e.endDate || e.date === di || d === 1) nEv++; });
+    var trip = null; evs = evs.filter(function(e){ var tr = tripOf(e); if (tr && !trip){ trip = tr; return false; } return true; });
+    var cls = "mcell" + (di === iso(t) ? " today" : "") + (di === S.monthSel ? " sel" : "") + (dt < t ? " past" : "") + (trip ? " vac" : "");
     cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="mpills" aria-hidden="true">' + evs.slice(0, evs.length > 2 ? 1 : 2).map(function(e){
       var C = CAT_COL[e.cat] || CAT_COL.neutre, sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
       return '<i style="background:' + (e.cat === "neutre" || !CAT_COL[e.cat] ? "#F1F1F4" : C[0]) + ';color:' + C[1] + '">' + h(sp.core) + '</i>';
-    }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span></button>');
+    }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
   }
   var sel = parseISO(S.monthSel), selEvs = eventsOn(S.monthSel);
   var panel = '<div class="mpanel"><div class="wdate' + (S.monthSel === iso(t) ? " today" : "") + '"><small>' + JOURS[sel.getDay()].replace(".","") + '</small><b>' + sel.getDate() + '</b></div><div style="min-width:0">'
