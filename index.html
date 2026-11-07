@@ -671,6 +671,26 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .add-grab::before{content:"";position:absolute;left:-60px;right:-60px;top:-12px;bottom:-14px}
 .more-sheet .add-head,.add-sheet .add-head{touch-action:none;padding-top:10px}
 .more-sheet,.add-sheet{overscroll-behavior:contain}
+
+/* Planner_0.13 : mois dans l'Agenda, Mood board */
+.mcard{padding:14px}
+.mood-today{padding:16px}
+.mood-q{font-size:17px;font-weight:800;color:var(--text);margin-bottom:12px}
+.mood-chips{display:flex;flex-wrap:wrap;gap:8px}
+.mood-chip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 13px 6px 8px;border-radius:999px;border:1.5px solid var(--line);background:#FFFFFF;font:inherit;font-size:13.5px;font-weight:800;color:var(--text);cursor:pointer}
+.mood-chip i{width:20px;height:20px;border-radius:7px;flex:none}
+.mood-chip[aria-pressed="true"]{border-color:#26262C;box-shadow:inset 0 0 0 1px #26262C}
+.mood-year{padding:14px 12px}
+.mg-top{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px}.mg-top b{font-size:18px;font-weight:800;min-width:56px;text-align:center}
+.mgrid13{display:grid;grid-template-columns:22px repeat(12,minmax(0,1fr));gap:3px 4px;align-items:center}
+.mg-h{text-align:center;font-size:12px;font-weight:800;color:var(--muted)}.mg-h.cur{color:var(--text);text-decoration:underline;text-underline-offset:3px}
+.mg-d{font-size:11px;font-weight:700;color:var(--muted);text-align:right;padding-right:3px}
+.mg-b,.mg-f,.mg-x{display:block;height:18px;border-radius:5px}
+.mg-b{border:0;padding:0;background:#EDEDF1;cursor:pointer}
+.mg-b.today{box-shadow:0 0 0 2px #FFFFFF,0 0 0 3.5px #26262C}
+.mg-f{background:#F7F7F9}
+.mg-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.mg-leg{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text)}.mg-leg i{width:16px;height:16px;border-radius:5px;flex:none}.mg-leg b{margin-left:auto;font-weight:800;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -717,7 +737,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.12";
+var APP_VERSION = "Planner_0.13";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -951,7 +971,7 @@ function heroHTML(){
     if (/^Bonjour, /.test(g)) g = "Coucou " + NAME + " !"; else if (/^(Bonsoir|Bonne nuit), /.test(g)) g = g.replace(", ", " ") + " !";
     return '<div class="hd2 gut"><p class="eb">' + h(date) + '</p><h1>' + h(g) + '</h1><p class="sub">' + h(hr < 18 ? "Prête pour une belle journée ?" : "Une bonne soirée t'attend.") + '</p><a class="av" href="#fiche" aria-label="Ta fiche">' + h((NAME || "A").charAt(0)) + '</a></div>';
   }
-  var title = S.view === "quetes" ? "Tes quêtes" : S.view === "fiche" ? "Ta fiche" : S.view === "notes" ? "Tes notes" : "La Gazette", sub = "";
+  var title = S.view === "quetes" ? "Tes quêtes" : S.view === "fiche" ? "Ta fiche" : S.view === "notes" ? "Tes notes" : S.view === "moods" ? "Mood board" : "La Gazette", sub = "";
   if (S.view === "gazette"){ var u = S.settings && S.settings.gazetteUpdatedAt; sub = '<p class="sub"><span class="pulse" aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2F7440;margin-right:6px"></span>' + h(u ? "Mise à jour " + ago(u) : "En attente de la première mise à jour") + '</p>'; }
   return '<div class="hd2 gut"><p class="eb">' + h(date) + '</p><h1>' + title + '</h1>' + sub + '</div>';
 }
@@ -1002,7 +1022,7 @@ function weekHTML(){
   }
   var sum = '<p class="wsum"><span>' + (count ? count + " rendez-vous" : "Aucun rendez-vous") + '</span> cette semaine' + (free.length && count ? " · " + (free.length > 3 ? free.length + " jours libres" : joinEt(free) + " libre" + (free.length > 1 ? "s" : "")) : "") + '</p>';
   var legend = '<div class="wlegend">' + CAT_ORDER.filter(function(k){ return used[k]; }).map(function(k){ return '<span class="k-' + k + '">' + CATS[k].n + '</span>'; }).join("") + '</div>';
-  return '<section class="section gut" aria-labelledby="wk"><div class="section-head"><div style="display:flex;align-items:center;gap:10px"><h2 id="wk">Cette semaine</h2></div><button type="button" class="link-btn" data-act="month">Voir le mois</button></div><div class="card week2">' + calNotice() + sum + rows.join("") + (count ? legend : "") + '</div><img class="stk" src="' + stk(S.theme.week) + '" alt="" style="right:4px;bottom:-34px;width:54px;height:54px;transform:rotate(10deg)"></section>';
+  return '<section class="section gut" aria-labelledby="wk"><div class="section-head"><div style="display:flex;align-items:center;gap:10px"><h2 id="wk">Cette semaine</h2></div></div><div class="card week2">' + calNotice() + sum + rows.join("") + (count ? legend : "") + '</div><img class="stk" src="' + stk(S.theme.week) + '" alt="" style="right:4px;bottom:-34px;width:54px;height:54px;transform:rotate(10deg)"></section>';
 }
 
 function questCardHTML(q, big){
@@ -1126,10 +1146,13 @@ function programmeHTML(){
   });
   var title = isToday ? "Programme du jour" : di === iso(addDays(today(), 1)) ? "Demain" : cap(JOURS_LONG[d.getDay()]) + " " + d.getDate();
   var body = rows.length ? rows.map(progRow).join("") : '<div class="prow empty"><span class="prt"><b>Rien de prévu</b><em>' + (isToday ? "Repose-toi, c'est aussi une mission." : "Journée libre pour l'instant.") + '</em></span></div>';
-  return '<section class="section gut" aria-labelledby="pg"><div class="section-head"><h2 id="pg">' + h(title) + '</h2><button type="button" class="link-btn" data-act="month">Voir le mois</button></div>' + calNotice() + '<div class="prows">' + body + '</div></section>';
+  return '<section class="section gut" aria-labelledby="pg"><div class="section-head"><h2 id="pg">' + h(title) + '</h2></div>' + calNotice() + '<div class="prows">' + body + '</div></section>';
 }
 function viewAccueil(){
-  return weekStripHTML() + programmeHTML() + bdaysHTML();
+  if (typeof S.monthOffset !== "number") S.monthOffset = 0;
+  return weekStripHTML() + programmeHTML()
+    + '<section class="section gut" aria-label="Le mois"><div class="card mcard" id="mBody">' + monthHTML() + '</div></section>'
+    + bdaysHTML();
 }
 /* ---------- Fiche d'un rendez-vous ---------- */
 function remText(rem, time){
@@ -1258,7 +1281,7 @@ function render(){
   var unseenN = v === "gazette" ? 0 : unseenGazette().length;
   document.getElementById("gazBadge").hidden = !unseenN;
   document.getElementById("gazBadgeSr").textContent = unseenN ? ", " + unseenN + " nouveauté" + (unseenN > 1 ? "s" : "") : "";
-  var html = v === "quetes" ? viewQuetes() : v === "fiche" ? viewFiche() : v === "gazette" ? viewGazette() : v === "notes" ? viewNotes() : viewAccueil();
+  var html = v === "quetes" ? viewQuetes() : v === "fiche" ? viewFiche() : v === "gazette" ? viewGazette() : v === "notes" ? viewNotes() : v === "moods" ? viewMoods() : viewAccueil();
   html += '<div class="settings-link"><button type="button" data-act="settings">' + GEAR_ICON + 'Paramètres</button></div>';
   if (S.dbState === "off") html = '<section class="section gut" style="margin-top:24px"><div class="card soft-empty">Tes données ne sont pas disponibles pour l\'instant. Vérifie ta connexion, puis recharge l\'appli.</div></section>' + html;
   document.getElementById("view").innerHTML = html;
@@ -1924,9 +1947,57 @@ function updatePreviewOut(){
     : '<b>' + h(describe(r)) + '</b>';
 }
 
+
+/* ---------- Mood board (Planner_0.13) : une case par jour, une couleur par humeur ---------- */
+var MOODS = [
+  {k:"top", n:"Très bonne journée", c:"#D7B6F6"},
+  {k:"bien", n:"Bonne journée", c:"#A6D8F8"},
+  {k:"moy", n:"Journée moyenne", c:"#8ED9A2"},
+  {k:"ok", n:"Journée ok", c:"#F4EC8A"},
+  {k:"stress", n:"Stressée", c:"#F8AA8E"},
+  {k:"dur", n:"Journée difficile", c:"#F062B8"},
+  {k:"repos", n:"Repos", c:"#F9D3E5"}
+];
+var MOIS_LETTRE = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+function moodMap(){ return (S.settings && S.settings.moods) || {}; }
+function moodOf(k){ return MOODS.find(function(m){ return m.k === k; }); }
+function setMood(di, k){
+  var m = Object.assign({}, moodMap());
+  if (!k || m[di] === k) delete m[di]; else m[di] = k;
+  if (!S.settings) S.settings = {};
+  S.settings.moods = m; render();
+  return saveSettings({moods:m});
+}
+function moodChips(di){
+  var cur = moodMap()[di];
+  return '<div class="mood-chips" role="group" aria-label="Choisir une humeur">' + MOODS.map(function(m){
+    return '<button type="button" class="mood-chip" data-act="mood-set" data-d="' + di + '" data-k="' + m.k + '" aria-pressed="' + (cur === m.k) + '"><i style="background:' + m.c + '"></i>' + h(m.n) + '</button>';
+  }).join("") + '</div>';
+}
+function viewMoods(){
+  var t = today(), ti = iso(t), y = S.moodYear || t.getFullYear(), mm = moodMap(), counts = {};
+  var head = '<span class="mg-c"></span>' + MOIS_LETTRE.map(function(l, i){ return '<span class="mg-h' + (y === t.getFullYear() && i === t.getMonth() ? " cur" : "") + '">' + l + '</span>'; }).join("");
+  var rows = "";
+  for (var d = 1; d <= 31; d++){
+    rows += '<span class="mg-d">' + d + '</span>';
+    for (var mo = 0; mo < 12; mo++){
+      var dt = new Date(y, mo, d);
+      if (dt.getMonth() !== mo){ rows += '<span class="mg-x" aria-hidden="true"></span>'; continue; }
+      var di = iso(dt), k = mm[di], md = k && moodOf(k), fut = dt > t;
+      if (md) counts[k] = (counts[k] || 0) + 1;
+      rows += fut ? '<span class="mg-f" aria-hidden="true"></span>'
+        : '<button type="button" class="mg-b' + (di === ti ? " today" : "") + '" data-act="mood-day" data-d="' + di + '"' + (md ? ' style="background:' + md.c + '"' : "") + ' aria-label="' + h(d + " " + MOIS[mo] + " : " + (md ? md.n : "pas encore noté")) + '"></button>';
+    }
+  }
+  var legend = MOODS.map(function(m){ return '<span class="mg-leg"><i style="background:' + m.c + '"></i>' + h(m.n) + '<b>' + (counts[m.k] || 0) + '</b></span>'; }).join("");
+  var todayCard = '<section class="section gut"><div class="card mood-today"><p class="mood-q">' + (new Date().getHours() < 17 ? "Comment se passe ta journée ?" : "Comment s'est passée ta journée ?") + '</p>' + moodChips(ti) + '</div></section>';
+  var nav = '<div class="mg-top"><button type="button" class="wsnav" data-act="mood-year" data-n="-1" aria-label="Année précédente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><b>' + y + '</b><button type="button" class="wsnav" data-act="mood-year" data-n="1" aria-label="Année suivante"' + (y >= t.getFullYear() ? " disabled" : "") + '><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>';
+  return todayCard + '<section class="section gut"><div class="card mood-year">' + nav + '<div class="mgrid13">' + head + rows + '</div><div class="mg-legend">' + legend + '</div></div></section>';
+}
 /* ---------- Menu du bas (Planner_0.9) : 3 pages au choix + bouton + + « Plus » ---------- */
 var NAV_IC = {accueil:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8.5 3v4M15.5 3v4"/><rect x="7.5" y="13" width="4" height="4" rx="1" fill="currentColor" stroke="none"/></svg>',quetes:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6"/><path d="M7 4a2 2 0 0 0-2 2v2h2M6 20a2 2 0 0 1-2-2v-1h10v1a2 2 0 0 0 2 2M10 9h5M10 13h5"/></svg>',fiche:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',gazette:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1z"/><path d="M17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 16h4"/></svg>',notes:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/></svg>',
   mois:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8.5 3v4M15.5 3v4"/><path d="M7.5 11h.01M12 11h.01M16.5 11h.01M7.5 14.5h.01M12 14.5h.01M16.5 14.5h.01M7.5 18h.01M12 18h.01" stroke-width="2.6"/></svg>',
+  moods:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.3 2.1 2 3.5 2s2.6-.7 3.5-2"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.8"/></svg>',
   reglages:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>'};
 var PAGES = {
@@ -1935,11 +2006,11 @@ var PAGES = {
   notes:{n:"Notes", view:true, k:"admin"},
   fiche:{n:"Fiche", view:true, k:"sante"},
   gazette:{n:"Gazette", view:true, k:"peche"},
-  mois:{n:"Agenda du mois", act:"month", k:"danse"},
+  moods:{n:"Mood board", view:true, k:"famille"},
   reglages:{n:"Réglages", act:"settings", k:null}
 };
 CAT_COL.peche = CAT_COL.peche || ["#FDDCC6","#AA4A1C","#EFA27A"];
-var NAV_DEFAULT = ["accueil","quetes","notes","fiche","gazette","mois","reglages"];
+var NAV_DEFAULT = ["accueil","quetes","notes","fiche","gazette","moods","reglages"];
 function navOrder(){
   var o = (S.settings && S.settings.navOrder) || null;
   if (!o){ try { o = JSON.parse(localStorage.getItem("navOrder") || "null"); } catch(e){ o = null; } }
@@ -2149,7 +2220,7 @@ function eventEditSheet(gid, did){
   var ev = g ? {title:g.title, date:g.date, time:g.time || "", end:g.endTime || "", place:g.location || ""} : {title:it.title, date:it.date, time:it.time || "", end:it.endTime || "", place:it.place || ""};
   var sp0 = splitTitle(ev.title, ev.place), cat0 = g ? (catFromColor(g.colorId, g.rappel) || guessCat(sp0.core, sp0.place, sp0.people, g.rappel)) : (it.cat || guessCat(sp0.core, sp0.place, sp0.people)), catSel = cat0;
   var note = g && g.recurring ? '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Événement qui se répète : seule cette date sera modifiée.</p>' : "";
-  var back = document.getElementById("mBody") ? function(){ openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); } : closeSheet;
+  var back = document.querySelector("#sheetRoot #mBody") ? function(){ openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); } : closeSheet;
   openSheet("Modifier l'événement", note + '<form id="fEvEdit"><div class="field"><label for="eTitle">Titre</label><input id="eTitle" type="text" required value="' + h(ev.title) + '"></div><div class="field"><label for="eDate">Date</label><input id="eDate" type="date" required value="' + h(ev.date) + '"></div><div class="ev-time"><div class="field"><label for="eStart">Début</label><input id="eStart" type="time" value="' + h(ev.time) + '"></div><div class="field"><label for="eEnd">Fin</label><input id="eEnd" type="time" value="' + h(ev.end) + '"></div></div><p style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Sans heure de début, l\'événement dure toute la journée.</p><div class="field"><label for="ePlace">Lieu</label><input id="ePlace" type="text" value="' + h(ev.place) + '" placeholder="Facultatif"></div><div class="field"><p class="cat-lbl" style="margin:0">Domaine</p><div class="cat-chips" id="eCats">' + catChips(cat0) + '</div></div><div class="bd-actions"><button class="btn green" type="submit">Enregistrer</button><button class="btn light" type="button" id="eDel">Supprimer</button></div></form>', function(){
     document.querySelectorAll("#eCats [data-cat]").forEach(function(b){ b.onclick = function(){ catSel = b.dataset.cat; document.querySelectorAll("#eCats [data-cat]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.cat === catSel)); }); }; });
     document.getElementById("fEvEdit").onsubmit = function(e){
@@ -2884,6 +2955,9 @@ document.addEventListener("click", function(e){
   if (act === "ev-edit"){ eventEditSheet(b.dataset.gid || null, b.dataset.id || null); return; }
   if (act === "add-open"){ moreClose(); addOpen(); return; }
   if (act === "more-open"){ moreOpen(); return; }
+  if (act === "mood-set"){ var dk = b.dataset.d, kk = b.dataset.k, inSheet = !!b.closest("#sheetRoot"); setMood(dk, kk); if (inSheet) closeSheet(); else { var md0 = moodOf(kk); if (moodMap()[dk]) toast(md0.n + ", c'est noté."); } return; }
+  if (act === "mood-day"){ var dd = parseISO(b.dataset.d); openSheet(cap(fmtDay(dd)), moodChips(b.dataset.d)); return; }
+  if (act === "mood-year"){ S.moodYear = (S.moodYear || today().getFullYear()) + (+b.dataset.n); if (S.moodYear > today().getFullYear()) S.moodYear = today().getFullYear(); render(); return; }
   if (act === "more-close"){ moreClose(); return; }
   if (act === "add-close"){ addClose(); return; }
   if (act === "ev-open"){ openEvent(b.dataset.gid || null, b.dataset.id || null, b.dataset.d || null); return; }
@@ -2929,7 +3003,7 @@ document.addEventListener("click", function(e){
 document.addEventListener("keydown", function(e){ if (e.key === "Escape") { closeSheet(); var l = document.querySelector(".levelup"); if (l) l.remove(); } });
 document.getElementById("captureForm").addEventListener("submit", onCapture);
 
-var TABS = ["accueil","quetes","fiche","gazette","notes"];
+var TABS = ["accueil","quetes","fiche","gazette","notes","moods"];
 function route(){
   var hsh = (location.hash || "").replace("#",""), prev = S.view;
   S.view = TABS.indexOf(hsh) >= 0 ? hsh : "accueil";
