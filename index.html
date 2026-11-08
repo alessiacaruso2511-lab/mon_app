@@ -663,7 +663,8 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mtile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border:0;border-radius:18px;background:transparent;font:inherit;color:var(--text);cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .mtile i{width:60px;height:60px;border-radius:19px;display:grid;place-items:center}
 .mtile small{font-size:12.5px;font-weight:800;text-align:center;line-height:1.2}
-.mtile.cur small{text-decoration:underline;text-underline-offset:3px}
+.mtile i{transition:transform .2s ease,box-shadow .2s ease}
+.mtile.cur i{box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.08),0 10px 18px -4px rgba(30,30,45,.35),0 3px 6px rgba(30,30,45,.15)!important;transform:translateY(-3px)}
 .mtile.ph{opacity:.25}
 .mtile.ghost{position:fixed;z-index:60;pointer-events:none;transform:scale(1.08);filter:drop-shadow(0 12px 18px rgba(25,25,35,.25));background:transparent}
 .mgrid.dragging .mtile:not(.ph) i{animation:wig .32s ease-in-out infinite alternate}
@@ -764,7 +765,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.20";
+var APP_VERSION = "Planner_0.21";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
