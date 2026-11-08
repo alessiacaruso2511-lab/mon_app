@@ -632,6 +632,7 @@ nav.tabs .in{grid-template-columns:repeat(2,calc((100% - 64px) / 4)) 64px repeat
 nav.tabs a{font-size:11.5px!important;min-width:0}
 .nav-add{justify-self:center;width:58px;height:58px;margin-top:-30px;border-radius:50%;border:4px solid #FFFFFF;background:#26262C;color:#FFFFFF;display:grid;place-items:center;padding:0;box-shadow:0 10px 22px rgba(30,30,45,.28);cursor:pointer}
 .nav-add:active{transform:scale(.95)}
+.nav-add{background:rgb(var(--sky,210,235,250));color:#26262C;box-shadow:0 10px 22px rgba(var(--sky-deep,90,130,160),.45);transition:background-color 1.2s ease}
 #addRoot{position:fixed;inset:0;z-index:45}
 #addRoot[hidden]{display:none}
 body.add-on{overflow:hidden}
@@ -761,7 +762,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.18";
+var APP_VERSION = "Planner_0.19";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -2025,6 +2026,7 @@ function skyRGB(d){
 function applySky(){
   var c = skyRGB(new Date());
   document.documentElement.style.setProperty("--sky", c.join(","));
+  document.documentElement.style.setProperty("--sky-deep", c.map(function(v){ return Math.round(v * 0.55); }).join(","));
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = "#" + c.map(function(v){ return (v < 16 ? "0" : "") + v.toString(16); }).join("").toUpperCase();
 }
