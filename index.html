@@ -711,6 +711,15 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mcell.vac{background:#E9F9F7;box-shadow:inset 0 0 0 2px #3FC9C0;border-top:0!important;border-radius:10px;margin:2px 1.5px}
 .mcell.vac.sel{background:#D9F3EF}
 .mcell.vac .mpills{padding:0 4px}
+.mshift{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:3px;font-size:9.5px;font-weight:700;color:#A2A2AD;white-space:nowrap;overflow:hidden;padding:0 1px}
+.mshift i{font-style:normal;width:12px;height:12px;border-radius:50%;background:#EDEDF1;color:#85858F;font-size:8px;font-weight:800;display:grid;place-items:center;flex:none}
+.wev.shift{background:#F7F7FA!important;box-shadow:inset 0 0 0 1px #EDEDF1!important;color:#85858F!important}
+.wev.shift .wic{background:#FFFFFF!important;color:#A2A2AD!important;box-shadow:none!important}
+.wev.shift .wt{font-weight:700}
+.mcell.vac .mshift{margin-top:0}
+.mcell.past .mshift{opacity:.6}
+.prshift{display:flex;align-items:center;gap:8px;margin:0 2px 8px;padding:0;border:0;background:none;font:inherit;font-size:13px;font-weight:700;color:#85858F;cursor:pointer;text-align:left}
+.prshift .dot{width:7px;height:7px;border-radius:50%;background:#C4C4CC;flex:none}
 .mcell.sel .mn{box-shadow:inset 0 0 0 1.5px var(--ink);border-radius:50%}
 .mcell.today .mn{width:24px!important;height:24px!important;font-size:12.5px!important;border-radius:50%;margin:1px 0}
 .mcell.today.sel .mn{box-shadow:none}
@@ -765,7 +774,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.21";
+var APP_VERSION = "Planner_0.22";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -953,6 +962,7 @@ function evCard(e){
     : '<span class="wtm">' + (e.time ? h(fmtTime(e.time)) + (e.endTime && minsOf(e.endTime) - minsOf(e.time) !== 60 ? '<small>→ ' + h(fmtTime(e.endTime)) + '</small>' : "") : "Journée") + '</span>';
   var inner = '<span class="wic">' + C.ic + '</span><span class="wtx"><span class="wt">' + h(p.core) + '</span>' + (meta ? '<span class="wmeta">' + meta + '</span>' : "") + '</span>';
   var edit = !e.todo && (e.src === "gcal" || e.src === "draft");
+  if (isShift(e)) cat = "neutre shift";
   if (edit) return '<button type="button" class="wev k-' + cat + '" data-act="ev-edit" ' + (e.src === "gcal" ? 'data-gid="' + h(e.gid) + '"' : 'data-id="' + h(e.id) + '"') + ' aria-label="' + h(p.core + (e.time ? ", " + fmtTime(e.time) : "") + ". Modifier") + '">' + inner + tm + '</button>';
   return '<div class="wev k-' + cat + '">' + inner + tm + '</div>';
 }
@@ -1146,10 +1156,11 @@ var CHAT_IC = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strok
 function doneEvs(){ try { return JSON.parse(localStorage.getItem("doneEvs") || "{}"); } catch(e){ return {}; } }
 function evKey(e){ return e.src === "gcal" ? "g:" + e.gid + ":" + (e.date || "") : "d:" + e.id; }
 function selDay(){ var t = iso(today()); if (!S.daySel || S.daySel < iso(monday(today()))) S.daySel = t; return S.daySel; }
+function isShift(e){ return !!e && /^th[ée]o au travail\b/i.test(e.title || ""); }
 function weekStripHTML(){
   var t = today(), m = addDays(monday(t), 7 * (S.weekOff || 0)), sel = selDay(), out = "";
   for (var i = 0; i < 7; i++){
-    var d = addDays(m, i), di = iso(d), evs = eventsOn(di), cats = [];
+    var d = addDays(m, i), di = iso(d), evs = eventsOn(di).filter(function(e){ return !isShift(e); }), cats = [];
     evs.forEach(function(e){ var c = e.cat || "neutre"; if (cats.indexOf(c) < 0) cats.push(c); });
     var dots = cats.slice(0, 3).map(function(c){ return '<i style="background:' + (CAT_COL[c] || CAT_COL.neutre)[2] + '"></i>'; }).join("");
     out += '<button type="button" class="wsd' + (di === sel ? " on" : "") + (di === iso(t) ? " today" : "") + (d < t ? " past" : "") + '" data-act="day-sel" data-d="' + di + '" aria-pressed="' + (di === sel) + '" aria-label="' + h(cap(JOURS_LONG[d.getDay()]) + " " + d.getDate() + (evs.length ? ", " + evs.length + " rendez-vous" : "")) + '"><small>' + cap(JOURS[d.getDay()].replace(".", "")) + '</small><b>' + d.getDate() + '</b><span class="pts">' + dots + '</span></button>';
@@ -1174,7 +1185,9 @@ function programmeHTML(){
     if (q && stepI >= 0) rows.push({cat:STAT_CAT[q.stat] || "admin", ic:FLAG_IC, t:q.steps[stepI].t, s:"Quête « " + q.title + " »", act:'<span class="prbtn" role="button" tabindex="0" data-act="step" data-id="' + h(q._id) + '" data-i="' + stepI + '">C\'est fait</span>'});
     dueLinks().slice(0, 2).forEach(function(l){ rows.push({cat:"famille", ic:CHAT_IC, t:l.type === "person" ? "Un mot à " + l.name : l.text, s:l.type === "person" ? (l.days >= 999 ? "Note ton prochain échange" : "Ça fait " + sinceText(l.days)) : l.name, act:'<span class="prbtn" role="button" tabindex="0" data-act="' + (l.type === "person" ? "contacted" : "follow-done") + '" data-id="' + h(l.id) + '">C\'est fait</span>'}); });
   }
+  var shift = null;
   eventsOn(di).forEach(function(e){
+    if (isShift(e)){ if (!shift) shift = e; return; }
     if (!isToday && e.src === "bday") return;
     var sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
     var sub = [sp.place, sp.people.length ? "avec " + joinEt(sp.people) : ""].filter(Boolean).join(" · ") || (e.src === "bday" ? "Toute la journée" : "");
@@ -1184,7 +1197,8 @@ function programmeHTML(){
   });
   var title = isToday ? "Programme du jour" : di === iso(addDays(today(), 1)) ? "Demain" : cap(JOURS_LONG[d.getDay()]) + " " + d.getDate();
   var body = rows.length ? rows.map(progRow).join("") : '<div class="prow empty"><span class="prt"><b>Rien de prévu</b><em>' + (isToday ? "Repose-toi, c'est aussi une mission." : "Journée libre pour l'instant.") + '</em></span></div>';
-  return '<section class="section gut" aria-labelledby="pg"><div class="section-head"><h2 id="pg">' + h(title) + '</h2></div>' + calNotice() + '<div class="prows">' + body + '</div></section>';
+  var sh = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
+  return '<section class="section gut" aria-labelledby="pg"><div class="section-head"><h2 id="pg">' + h(title) + '</h2></div>' + calNotice() + sh + '<div class="prows">' + body + '</div></section>';
 }
 function viewAccueil(){
   if (typeof S.monthOffset !== "number") S.monthOffset = 0;
@@ -2366,14 +2380,15 @@ function monthHTML(){
   var nEv = 0, nBd = 0;
   for (var i=0;i<lead;i++) cells.push('<div class="mcell blank" aria-hidden="true"></div>');
   for (var d=1; d<=dim; d++){
-    var dt = new Date(m0.getFullYear(), m0.getMonth(), d), di = iso(dt), evs = eventsOn(di);
+    var dt = new Date(m0.getFullYear(), m0.getMonth(), d), di = iso(dt), evs = eventsOn(di), shift = null;
+    evs = evs.filter(function(e){ if (isShift(e)){ if (!shift) shift = e; return false; } return true; });
     evs.forEach(function(e){ if (e.src === "bday" || /^anniversaire/i.test(e.title)) nBd++; else if (!e.endDate || e.date === di || d === 1) nEv++; });
     var trip = null; evs = evs.filter(function(e){ var tr = tripOf(e); if (tr && !trip){ trip = tr; return false; } return true; });
     var cls = "mcell" + (di === iso(t) ? " today" : "") + (di === S.monthSel ? " sel" : "") + (dt < t ? " past" : "") + (trip ? " vac" : "");
     cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="mpills" aria-hidden="true">' + evs.slice(0, evs.length > 2 ? 1 : 2).map(function(e){
       var C = CAT_COL[e.cat] || CAT_COL.neutre, sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
       return '<i style="background:' + (e.cat === "neutre" || !CAT_COL[e.cat] ? "#F1F1F4" : C[0]) + ';color:' + C[1] + '">' + h(sp.core) + '</i>';
-    }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
+    }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + (shift && shift.time ? '<span class="mshift" aria-label="Théo travaille à ' + fmtTime(shift.time) + '"><i aria-hidden="true">T</i>' + fmtTime(shift.time) + '</span>' : "") + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
   }
   var sel = parseISO(S.monthSel), selEvs = eventsOn(S.monthSel);
   var panel = '<div class="mpanel"><div class="wdate' + (S.monthSel === iso(t) ? " today" : "") + '"><small>' + JOURS[sel.getDay()].replace(".","") + '</small><b>' + sel.getDate() + '</b></div><div style="min-width:0">'
