@@ -801,7 +801,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.23";
+var APP_VERSION = "Planner_0.24";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -2430,7 +2430,7 @@ function monthHTML(){
     cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="mpills" aria-hidden="true">' + evs.slice(0, evs.length > 2 ? 1 : 2).map(function(e){
       var C = CAT_COL[e.cat] || CAT_COL.neutre, sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
       return '<i style="background:' + (e.cat === "neutre" || !CAT_COL[e.cat] ? "#F1F1F4" : C[0]) + ';color:' + C[1] + '">' + h(sp.core) + '</i>';
-    }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + (shift && shift.time ? '<span class="mshift" aria-label="Théo travaille à ' + fmtTime(shift.time) + '"><i aria-hidden="true">T</i>' + fmtTime(shift.time) + '</span>' : "") + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
+    }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + "" + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
   }
   var sel = parseISO(S.monthSel || iso(m0)), selEvs = eventsOn(S.monthSel || iso(m0));
   var panel = '<div class="mpanel"><div class="wdate' + (S.monthSel === iso(t) ? " today" : "") + '"><small>' + JOURS[sel.getDay()].replace(".","") + '</small><b>' + sel.getDate() + '</b></div><div style="min-width:0">'
