@@ -714,7 +714,10 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .hdmini h1{font-size:24px;margin-top:2px}
 .hdmini .av{width:38px;height:38px;font-size:15px;top:4px}
 .agfit .section{margin-top:12px}
-.pgcard{padding:12px 14px 6px}
+.pgcard{padding:12px 14px 6px;height:174px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column}
+.pgcard.all{height:auto}
+.pgcard .crow{height:44px;padding:0}
+.pgcard .prshift{height:26px;margin:2px 0 0}
 .pgh{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:22px}
 .pgh h2{font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
 .pgback{border:1px solid var(--line);background:#FFFFFF;border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;font-weight:800;color:var(--ink)}
@@ -733,7 +736,8 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mfit .mcard{padding:12px 10px 8px}
 .mfit .month{margin-block:8px 0}
 .mfit .mcell{min-height:0!important;height:var(--mrow,64px)!important;overflow:hidden;padding:3px 0 3px!important;gap:2px!important}
-.mfit .mcell .mn{width:24px!important;height:24px!important;font-size:13px!important}
+.mfit .mcell .mn{width:24px!important;height:24px!important;font-size:13px!important;flex-shrink:0}
+.mfit .mpills{flex-shrink:0}
 .mfit .mshift{margin-top:auto;font-size:9px}.mfit .mshift i{width:11px;height:11px;font-size:7.5px}
 .mfit .mvac{gap:0}.mfit .mvac svg{width:18px;height:11px}
 body.agpage #app{min-height:0}
@@ -801,7 +805,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.24";
+var APP_VERSION = "Planner_0.25";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1233,9 +1237,9 @@ function programmeHTML(){
   var title = isToday ? "Programme du jour" : di === iso(addDays(today(), 1)) ? "Demain" : cap(JOURS_LONG[d.getDay()]) + " " + d.getDate();
   var body = rows.length ? rows.map(progRow).join("") : '<div class="prow empty"><span class="prt"><b>Rien de prévu</b><em>' + (isToday ? "Repose-toi, c'est aussi une mission." : "Journée libre pour l'instant.") + '</em></span></div>';
   var shBtn = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
-  var MAXR = 3, shown = S.progAll ? rows : rows.slice(0, MAXR), more = rows.length - shown.length;
+  var budget = shift ? 2 : 3, shown = S.progAll || rows.length <= budget ? rows : rows.slice(0, budget - 1), more = rows.length - shown.length, MAXR = budget;
   var cbody = rows.length ? shown.map(progRowC).join("") : '<p class="cempty"><b>Rien de prévu</b> · ' + (isToday ? "repose-toi, c'est aussi une mission." : "journée libre pour l'instant.") + '</p>';
-  return '<section class="section gut pgc" aria-labelledby="pg"><div class="card pgcard"><div class="pgh"><h2 id="pg">' + h(title) + '</h2>' + (isToday ? "" : '<button type="button" class="pgback" data-act="day-sel" data-d="' + iso(today()) + '">Aujourd\'hui</button>') + '</div>' + calNotice() + shBtn + '<div class="crows">' + cbody + '</div>'
+  return '<section class="section gut pgc" aria-labelledby="pg"><div class="card pgcard' + (S.progAll ? " all" : "") + '"><div class="pgh"><h2 id="pg">' + h(title) + '</h2>' + (isToday ? "" : '<button type="button" class="pgback" data-act="day-sel" data-d="' + iso(today()) + '">Aujourd\'hui</button>') + '</div>' + calNotice() + shBtn + '<div class="crows">' + cbody + '</div>'
     + (more > 0 ? '<button type="button" class="pgmore" data-act="prog-all">+ ' + more + ' autre' + (more > 1 ? "s" : "") + '</button>' : S.progAll && rows.length > MAXR ? '<button type="button" class="pgmore" data-act="prog-all">Réduire</button>' : "") + '</div></section>';
 }
 function viewAccueil(){
@@ -2427,10 +2431,10 @@ function monthHTML(){
     evs.forEach(function(e){ if (e.src === "bday" || /^anniversaire/i.test(e.title)) nBd++; else if (!e.endDate || e.date === di || d === 1) nEv++; });
     var trip = null; evs = evs.filter(function(e){ var tr = tripOf(e); if (tr && !trip){ trip = tr; return false; } return true; });
     var cls = "mcell" + (di === iso(t) ? " today" : "") + (di === S.monthSel ? " sel" : "") + (dt < t ? " past" : "") + (trip ? " vac" : "");
-    cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="mpills" aria-hidden="true">' + evs.slice(0, evs.length > 2 ? 1 : 2).map(function(e){
+    cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="mpills" aria-hidden="true">' + evs.slice(0, fit ? 1 : (evs.length > 2 ? 1 : 2)).map(function(e){
       var C = CAT_COL[e.cat] || CAT_COL.neutre, sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
       return '<i style="background:' + (e.cat === "neutre" || !CAT_COL[e.cat] ? "#F1F1F4" : C[0]) + ';color:' + C[1] + '">' + h(sp.core) + '</i>';
-    }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + "" + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
+    }).join("") + ((fit ? evs.length > 1 : evs.length > 2) ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + "" + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
   }
   var sel = parseISO(S.monthSel || iso(m0)), selEvs = eventsOn(S.monthSel || iso(m0));
   var panel = '<div class="mpanel"><div class="wdate' + (S.monthSel === iso(t) ? " today" : "") + '"><small>' + JOURS[sel.getDay()].replace(".","") + '</small><b>' + sel.getDate() + '</b></div><div style="min-width:0">'
@@ -2441,7 +2445,7 @@ function monthHTML(){
     + '<div class="month">' + cells.join("") + '</div>' + (fit ? "" : panel);
 }
 function fitMonth(){
-  var g = S.view === "accueil" && document.querySelector("#mBody .month"); if (!g) return;
+  var g = S.view === "accueil" && document.querySelector("#mBody .month"); if (!g || S.progAll) return;
   var n = Math.ceil(g.querySelectorAll(".mcell").length / 7), nav = document.querySelector("nav.tabs");
   var bottom = nav ? nav.getBoundingClientRect().top : window.innerHeight;
   var app = document.getElementById("app"); if (app) app.style.paddingBottom = Math.max(0, window.innerHeight - bottom + 4) + "px";
