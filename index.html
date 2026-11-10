@@ -732,7 +732,8 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .cck.on::after{content:"";width:9px;height:5px;border-left:2.2px solid #FFFFFF;border-bottom:2.2px solid #FFFFFF;transform:translateY(-1px) rotate(-45deg)}
 .crow.done .ctt b{text-decoration:line-through;color:var(--muted)}
 .cempty{margin:8px 0 8px;font-size:14px;font-weight:700;color:var(--muted)}.cempty b{color:var(--text)}
-.pgmore{border:0;background:none;padding:2px 0 8px;font:inherit;font-size:12.5px;font-weight:800;color:#2C679C;cursor:pointer}
+.pghr{display:flex;align-items:center;gap:6px}
+.pgmore{border:0;background:#EEF5FC;border-radius:999px;padding:3px 10px;font:inherit;font-size:12.5px;font-weight:800;color:#2C679C;cursor:pointer}
 .mfit .mcard{padding:12px 10px 8px}
 .mfit .month{margin-block:8px 0}
 .mfit .mcell{min-height:0!important;height:var(--mrow,64px)!important;overflow:hidden;padding:3px 0 3px!important;gap:2px!important}
@@ -741,7 +742,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mfit .mcell{position:relative}
 .mfit .mcell{position:static}
 .mfit .mpills{position:relative}
-.mfit .mpills em{position:absolute;top:-7px;right:1px;font-size:8.5px;line-height:1;padding:2px 3px!important;border-radius:6px;background:var(--ink);color:#FFFFFF;box-shadow:0 0 0 1.5px #FFFFFF}
+.mfit .mpills em{position:absolute;top:-4px;right:0;font-size:8px;line-height:1;padding:2px 3px!important;border-radius:6px;background:var(--ink);color:#FFFFFF;box-shadow:0 0 0 1.5px #FFFFFF}
 .mfit .mvac b{font-size:8.5px}
 .mfit .mshift{margin-top:auto;font-size:9px}.mfit .mshift i{width:11px;height:11px;font-size:7.5px}
 .mfit .mvac{gap:0}.mfit .mvac svg{width:18px;height:11px}
@@ -810,7 +811,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.26";
+var APP_VERSION = "Planner_0.27";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1242,10 +1243,10 @@ function programmeHTML(){
   var title = isToday ? "Programme du jour" : di === iso(addDays(today(), 1)) ? "Demain" : cap(JOURS_LONG[d.getDay()]) + " " + d.getDate();
   var body = rows.length ? rows.map(progRow).join("") : '<div class="prow empty"><span class="prt"><b>Rien de prévu</b><em>' + (isToday ? "Repose-toi, c'est aussi une mission." : "Journée libre pour l'instant.") + '</em></span></div>';
   var shBtn = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
-  var budget = shift ? 2 : 3, shown = S.progAll || rows.length <= budget ? rows : rows.slice(0, budget - 1), more = rows.length - shown.length, MAXR = budget;
+  var budget = shift ? 2 : 3, shown = S.progAll ? rows : rows.slice(0, budget), more = rows.length - shown.length, MAXR = budget;
   var cbody = rows.length ? shown.map(progRowC).join("") : '<p class="cempty"><b>Rien de prévu</b> · ' + (isToday ? "repose-toi, c'est aussi une mission." : "journée libre pour l'instant.") + '</p>';
-  return '<section class="section gut pgc" aria-labelledby="pg"><div class="card pgcard' + (S.progAll ? " all" : "") + '"><div class="pgh"><h2 id="pg">' + h(title) + '</h2>' + (isToday ? "" : '<button type="button" class="pgback" data-act="day-sel" data-d="' + iso(today()) + '">Aujourd\'hui</button>') + '</div>' + calNotice() + shBtn + '<div class="crows">' + cbody + '</div>'
-    + (more > 0 ? '<button type="button" class="pgmore" data-act="prog-all">+ ' + more + ' autre' + (more > 1 ? "s" : "") + '</button>' : S.progAll && rows.length > MAXR ? '<button type="button" class="pgmore" data-act="prog-all">Réduire</button>' : "") + '</div></section>';
+  return '<section class="section gut pgc" aria-labelledby="pg"><div class="card pgcard' + (S.progAll ? " all" : "") + '"><div class="pgh"><h2 id="pg">' + h(title) + '</h2><span class="pghr">' + (more > 0 ? '<button type="button" class="pgmore" data-act="prog-all">+ ' + more + ' autre' + (more > 1 ? "s" : "") + '</button>' : S.progAll && rows.length > MAXR ? '<button type="button" class="pgmore" data-act="prog-all">Réduire</button>' : "") + (isToday ? "" : '<button type="button" class="pgback" data-act="day-sel" data-d="' + iso(today()) + '">Aujourd\'hui</button>') + '</span></div>' + calNotice() + shBtn + '<div class="crows">' + cbody + '</div>'
+    + '</div></section>';
 }
 function viewAccueil(){
   if (typeof S.monthOffset !== "number") S.monthOffset = 0;
