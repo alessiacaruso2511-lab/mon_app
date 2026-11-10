@@ -811,7 +811,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.27";
+var APP_VERSION = "Planner_0.28";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1229,8 +1229,10 @@ function programmeHTML(){
     if (q && stepI >= 0) rows.push({cat:STAT_CAT[q.stat] || "admin", ic:FLAG_IC, t:q.steps[stepI].t, tmc:"Quête", ck:'data-act="step" data-id="' + h(q._id) + '" data-i="' + stepI + '"', s:"Quête « " + q.title + " »", act:'<span class="prbtn" role="button" tabindex="0" data-act="step" data-id="' + h(q._id) + '" data-i="' + stepI + '">C\'est fait</span>'});
     dueLinks().slice(0, 2).forEach(function(l){ rows.push({cat:"famille", ic:CHAT_IC, tmc:"Lien", ck:'data-act="' + (l.type === "person" ? "contacted" : "follow-done") + '" data-id="' + h(l.id) + '"', t:l.type === "person" ? "Un mot à " + l.name : l.text, s:l.type === "person" ? (l.days >= 999 ? "Note ton prochain échange" : "Ça fait " + sinceText(l.days)) : l.name, act:'<span class="prbtn" role="button" tabindex="0" data-act="' + (l.type === "person" ? "contacted" : "follow-done") + '" data-id="' + h(l.id) + '">C\'est fait</span>'}); });
   }
-  var shift = null;
+  var shift = null, nowM = new Date().getHours() * 60 + new Date().getMinutes(), nPast = 0;
+  var isPast = function(e){ if (!isToday || !e.time || e.todo || e.endDate) return false; var end = e.endTime ? minsOf(e.endTime) : minsOf(e.time) + 60; if (end <= minsOf(e.time)) end = 24 * 60; return end <= nowM; };
   eventsOn(di).forEach(function(e){
+    if (isPast(e)){ nPast++; return; }
     if (isShift(e)){ if (!shift) shift = e; return; }
     if (!isToday && e.src === "bday") return;
     var sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
@@ -1244,7 +1246,8 @@ function programmeHTML(){
   var body = rows.length ? rows.map(progRow).join("") : '<div class="prow empty"><span class="prt"><b>Rien de prévu</b><em>' + (isToday ? "Repose-toi, c'est aussi une mission." : "Journée libre pour l'instant.") + '</em></span></div>';
   var shBtn = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
   var budget = shift ? 2 : 3, shown = S.progAll ? rows : rows.slice(0, budget), more = rows.length - shown.length, MAXR = budget;
-  var cbody = rows.length ? shown.map(progRowC).join("") : '<p class="cempty"><b>Rien de prévu</b> · ' + (isToday ? "repose-toi, c'est aussi une mission." : "journée libre pour l'instant.") + '</p>';
+  S.progPast = nPast;
+  var cbody = rows.length ? shown.map(progRowC).join("") : nPast ? '<p class="cempty"><b>Tout est passé pour aujourd\'hui</b> · profite de ta soirée.</p>' : '<p class="cempty"><b>Rien de prévu</b> · ' + (isToday ? "repose-toi, c'est aussi une mission." : "journée libre pour l'instant.") + '</p>';
   return '<section class="section gut pgc" aria-labelledby="pg"><div class="card pgcard' + (S.progAll ? " all" : "") + '"><div class="pgh"><h2 id="pg">' + h(title) + '</h2><span class="pghr">' + (more > 0 ? '<button type="button" class="pgmore" data-act="prog-all">+ ' + more + ' autre' + (more > 1 ? "s" : "") + '</button>' : S.progAll && rows.length > MAXR ? '<button type="button" class="pgmore" data-act="prog-all">Réduire</button>' : "") + (isToday ? "" : '<button type="button" class="pgback" data-act="day-sel" data-d="' + iso(today()) + '">Aujourd\'hui</button>') + '</span></div>' + calNotice() + shBtn + '<div class="crows">' + cbody + '</div>'
     + '</div></section>';
 }
@@ -2100,6 +2103,12 @@ function applySky(){
   if (meta) meta.content = "#" + c.map(function(v){ return (v < 16 ? "0" : "") + v.toString(16); }).join("").toUpperCase();
 }
 applySky(); setInterval(applySky, 60000);
+setInterval(function(){
+  if (S.view !== "accueil" || document.hidden || S.progAll) return;
+  var a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
+  if (!document.getElementById("evRoot").hidden || !document.getElementById("addRoot").hidden) return;
+  var was = S.progPast; programmeHTML(); if (S.progPast !== was) render();
+}, 60000);
 document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "visible") applySky(); });
 /* ---------- Mood board (Planner_0.13) : une case par jour, une couleur par humeur ---------- */
 var MOODS = [
