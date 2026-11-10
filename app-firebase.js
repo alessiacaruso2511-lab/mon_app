@@ -214,7 +214,7 @@ const splash = document.getElementById("splash"), t0 = Date.now();
 let splashOpen = !!splash;
 function hideSplash(){
   if (!splashOpen) return; splashOpen = false;
-  setTimeout(() => { splash.classList.add("out"); setTimeout(() => splash.remove(), 400); }, Math.max(0, 1400 - (Date.now() - t0)));
+  setTimeout(() => { splash.classList.add("out"); setTimeout(() => splash.remove(), 400); }, Math.max(0, 900 - (Date.now() - t0)));
 }
 const timeout = (ms) => new Promise((r) => setTimeout(r, ms));
 const appReady = new Promise((resolve) => {
