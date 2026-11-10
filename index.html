@@ -83,7 +83,8 @@ body.locked #app,body.locked nav.tabs{visibility:hidden}
 html{overflow-x:hidden}
 .slide-next>#hero,.slide-next>#captureZone,.slide-next>#view>:not(.fab){animation:inFromRight .26s cubic-bezier(.2,.7,.3,1)}
 .slide-prev>#hero,.slide-prev>#captureZone,.slide-prev>#view>:not(.fab){animation:inFromLeft .26s cubic-bezier(.2,.7,.3,1)}
-#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;background:#FFFFFF;transition:opacity .35s ease}
+#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;background:#C9785F url(img/splash.jpg) center/cover no-repeat;transition:opacity .5s ease}
+#splash video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
 #splash.out{opacity:0;pointer-events:none}
 #splash img{width:116px;height:116px;border-radius:28px;box-shadow:0 14px 34px rgba(150,100,60,.22)}
 #splash .spin{width:30px;height:30px;border-radius:50%;border:3px solid rgba(154,106,46,.18);border-top-color:#9A6A2E;animation:spin .9s linear infinite}
@@ -768,7 +769,7 @@ body.agpage .settings-link{display:none}
 </style>
 </head>
 <body>
-<div id="splash" role="status" aria-label="Chargement de Mon carnet"><img src="icons/icon-192-v2.png" alt="" width="116" height="116"><div class="spin" aria-hidden="true"></div></div>
+<div id="splash" role="status" aria-label="Chargement de Mon carnet"><video autoplay muted loop playsinline preload="auto" poster="img/splash.jpg" aria-hidden="true"><source src="img/splash.mp4" type="video/mp4"><source src="img/splash.webm" type="video/webm"></video></div>
 
 <div id="gate" hidden>
   <h1>Mon carnet</h1>
@@ -811,7 +812,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.28";
+var APP_VERSION = "Planner_0.29";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";

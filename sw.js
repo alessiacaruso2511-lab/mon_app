@@ -18,6 +18,8 @@ self.addEventListener("fetch", (e) => {
   /* Google Agenda, Firebase et la connexion Google : jamais en cache (Firebase gère lui-même son mode hors ligne) */
   if (/googleapis\.com|firebaseio|identitytoolkit|securetoken|accounts\.google\.com|firebaseapp\.com/.test(url.host)) return;
   const sameOrigin = url.origin === self.location.origin;
+  /* vidéo de démarrage : laissée au navigateur (lecture par morceaux) */
+  if (sameOrigin && /\.(mp4|webm)$/.test(url.pathname)) return;
   const isAsset = sameOrigin && /\/(img|stk|fonts|icons)\//.test(url.pathname);
   const isSdk = url.host === "www.gstatic.com";
   if (isAsset || isSdk){
