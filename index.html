@@ -738,6 +738,11 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mfit .mcell{min-height:0!important;height:var(--mrow,64px)!important;overflow:hidden;padding:3px 0 3px!important;gap:2px!important}
 .mfit .mcell .mn{width:24px!important;height:24px!important;font-size:13px!important;flex-shrink:0}
 .mfit .mpills{flex-shrink:0}
+.mfit .mcell{position:relative}
+.mfit .mcell{position:static}
+.mfit .mpills{position:relative}
+.mfit .mpills em{position:absolute;top:-7px;right:1px;font-size:8.5px;line-height:1;padding:2px 3px!important;border-radius:6px;background:var(--ink);color:#FFFFFF;box-shadow:0 0 0 1.5px #FFFFFF}
+.mfit .mvac b{font-size:8.5px}
 .mfit .mshift{margin-top:auto;font-size:9px}.mfit .mshift i{width:11px;height:11px;font-size:7.5px}
 .mfit .mvac{gap:0}.mfit .mvac svg{width:18px;height:11px}
 body.agpage #app{min-height:0}
@@ -805,7 +810,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.25";
+var APP_VERSION = "Planner_0.26";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -2431,10 +2436,10 @@ function monthHTML(){
     evs.forEach(function(e){ if (e.src === "bday" || /^anniversaire/i.test(e.title)) nBd++; else if (!e.endDate || e.date === di || d === 1) nEv++; });
     var trip = null; evs = evs.filter(function(e){ var tr = tripOf(e); if (tr && !trip){ trip = tr; return false; } return true; });
     var cls = "mcell" + (di === iso(t) ? " today" : "") + (di === S.monthSel ? " sel" : "") + (dt < t ? " past" : "") + (trip ? " vac" : "");
-    cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="mpills" aria-hidden="true">' + evs.slice(0, fit ? 1 : (evs.length > 2 ? 1 : 2)).map(function(e){
+    cells.push('<button type="button" class="' + cls + '" data-act="mday" data-d="' + di + '" aria-pressed="' + (di === S.monthSel) + '" aria-label="' + h(fmtDay(dt) + (evs.length ? ", " + evs.length + " événement" + (evs.length>1?"s":"") : ", rien de prévu")) + '"><span class="mn">' + d + '</span><span class="mpills" aria-hidden="true">' + evs.slice(0, fit ? (trip ? 0 : 1) : (evs.length > 2 ? 1 : 2)).map(function(e){
       var C = CAT_COL[e.cat] || CAT_COL.neutre, sp = splitTitle(e.title, e.meta && e.src === "gcal" ? e.meta : e.place);
       return '<i style="background:' + (e.cat === "neutre" || !CAT_COL[e.cat] ? "#F1F1F4" : C[0]) + ';color:' + C[1] + '">' + h(sp.core) + '</i>';
-    }).join("") + ((fit ? evs.length > 1 : evs.length > 2) ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + "" + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
+    }).join("") + ((fit ? evs.length > (trip ? 0 : 1) : evs.length > 2) ? '<em>+' + (evs.length - (fit && trip ? 0 : 1)) + '</em>' : "") + '</span>' + "" + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
   }
   var sel = parseISO(S.monthSel || iso(m0)), selEvs = eventsOn(S.monthSel || iso(m0));
   var panel = '<div class="mpanel"><div class="wdate' + (S.monthSel === iso(t) ? " today" : "") + '"><small>' + JOURS[sel.getDay()].replace(".","") + '</small><b>' + sel.getDate() + '</b></div><div style="min-width:0">'
