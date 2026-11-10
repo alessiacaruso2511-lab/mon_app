@@ -711,6 +711,33 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 .mcell.vac{background:#E9F9F7;box-shadow:inset 0 0 0 2px #3FC9C0;border-top:0!important;border-radius:10px;margin:2px 1.5px}
 .mcell.vac.sel{background:#D9F3EF}
 .mcell.vac .mpills{padding:0 4px}
+.hdmini h1{font-size:24px;margin-top:2px}
+.hdmini .av{width:38px;height:38px;font-size:15px;top:4px}
+.agfit .section{margin-top:12px}
+.pgcard{padding:12px 14px 6px}
+.pgh{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:22px}
+.pgh h2{font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+.pgback{border:1px solid var(--line);background:#FFFFFF;border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;font-weight:800;color:var(--ink)}
+.pgcard .prshift{margin:6px 0 2px}
+.crow{display:grid;grid-template-columns:52px 4px minmax(0,1fr) 24px;gap:10px;align-items:center;width:100%;box-sizing:border-box;padding:9px 0;border:0;border-top:1px solid #F1F1F4;background:none;font:inherit;color:var(--text);text-align:left}
+.crows .crow:first-child{border-top:0}
+.ctm{font-size:13px;font-weight:800;color:var(--muted);white-space:nowrap}
+.cbar{height:20px;border-radius:2px}
+.ctt b{display:block;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cck{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 2px #D9D9E0;display:grid;place-items:center;cursor:pointer}
+.cck.on{background:var(--ink);box-shadow:none}
+.cck.on::after{content:"";width:9px;height:5px;border-left:2.2px solid #FFFFFF;border-bottom:2.2px solid #FFFFFF;transform:translateY(-1px) rotate(-45deg)}
+.crow.done .ctt b{text-decoration:line-through;color:var(--muted)}
+.cempty{margin:8px 0 8px;font-size:14px;font-weight:700;color:var(--muted)}.cempty b{color:var(--text)}
+.pgmore{border:0;background:none;padding:2px 0 8px;font:inherit;font-size:12.5px;font-weight:800;color:#2C679C;cursor:pointer}
+.mfit .mcard{padding:12px 10px 8px}
+.mfit .month{margin-block:8px 0}
+.mfit .mcell{min-height:0!important;height:var(--mrow,64px)!important;overflow:hidden;padding:3px 0 3px!important;gap:2px!important}
+.mfit .mcell .mn{width:24px!important;height:24px!important;font-size:13px!important}
+.mfit .mshift{margin-top:auto;font-size:9px}.mfit .mshift i{width:11px;height:11px;font-size:7.5px}
+.mfit .mvac{gap:0}.mfit .mvac svg{width:18px;height:11px}
+body.agpage #app{min-height:0}
+body.agpage .settings-link{display:none}
 .mshift{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:3px;font-size:9.5px;font-weight:700;color:#A2A2AD;white-space:nowrap;overflow:hidden;padding:0 1px}
 .mshift i{font-style:normal;width:12px;height:12px;border-radius:50%;background:#EDEDF1;color:#85858F;font-size:8px;font-weight:800;display:grid;place-items:center;flex:none}
 .wev.shift{background:#F7F7FA!important;box-shadow:inset 0 0 0 1px #EDEDF1!important;color:#85858F!important}
@@ -774,7 +801,7 @@ nav.tabs .nl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width
 
 
 <script>
-var APP_VERSION = "Planner_0.22";
+var APP_VERSION = "Planner_0.23";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1017,7 +1044,7 @@ function heroHTML(){
   if (S.view === "accueil"){
     var hr = new Date().getHours(), g = greetText().split(" · ")[0];
     if (/^Bonjour, /.test(g)) g = "Coucou " + NAME + " !"; else if (/^(Bonsoir|Bonne nuit), /.test(g)) g = g.replace(", ", " ") + " !";
-    return '<div class="hd2 gut"><p class="eb">' + h(date) + '</p><h1>' + h(g) + '</h1><p class="sub">' + h(hr < 18 ? "Prête pour une belle journée ?" : "Une bonne soirée t'attend.") + '</p><a class="av" href="#fiche" aria-label="Ta fiche">' + h((NAME || "A").charAt(0)) + '</a></div>';
+    return '<div class="hd2 hdmini gut"><p class="eb">' + h(date) + '</p><h1>' + h(g) + '</h1><a class="av" href="#fiche" aria-label="Ta fiche">' + h((NAME || "A").charAt(0)) + '</a></div>';
   }
   var title = S.view === "quetes" ? "Tes quêtes" : S.view === "fiche" ? "Ta fiche" : S.view === "notes" ? "Tes notes" : S.view === "moods" ? "Mood board" : "La Gazette", sub = "";
   if (S.view === "gazette"){ var u = S.settings && S.settings.gazetteUpdatedAt; sub = '<p class="sub"><span class="pulse" aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2F7440;margin-right:6px"></span>' + h(u ? "Mise à jour " + ago(u) : "En attente de la première mise à jour") + '</p>'; }
@@ -1155,7 +1182,7 @@ var CAKE_IC2 = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stro
 var CHAT_IC = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
 function doneEvs(){ try { return JSON.parse(localStorage.getItem("doneEvs") || "{}"); } catch(e){ return {}; } }
 function evKey(e){ return e.src === "gcal" ? "g:" + e.gid + ":" + (e.date || "") : "d:" + e.id; }
-function selDay(){ var t = iso(today()); if (!S.daySel || S.daySel < iso(monday(today()))) S.daySel = t; return S.daySel; }
+function selDay(){ var t = iso(today()); if (!S.daySel || (S.daySelAt && Date.now() - S.daySelAt > 3600000)) { S.daySel = t; S.daySelAt = 0; } return S.daySel; }
 function isShift(e){ return !!e && /^th[ée]o au travail\b/i.test(e.title || ""); }
 function weekStripHTML(){
   var t = today(), m = addDays(monday(t), 7 * (S.weekOff || 0)), sel = selDay(), out = "";
@@ -1177,13 +1204,20 @@ function progRow(o){
   if (o.open) return '<button type="button" class="prow' + (o.done ? " done" : "") + '" ' + o.open + '>' + inner + right + '</button>';
   return '<div class="prow' + (o.done ? " done" : "") + '">' + inner + right + '</div>';
 }
+function progRowC(o){
+  var C = CAT_COL[o.cat] || CAT_COL.neutre;
+  var ck = '<span class="cck' + (o.done ? " on" : "") + '"' + (o.ck && !o.done ? ' role="button" tabindex="0" aria-label="C\'est fait" ' + o.ck : ' aria-hidden="true"') + '></span>';
+  var inner = '<span class="ctm">' + h(o.tmc || o.tm || "") + '</span><span class="cbar" style="background:' + C[2] + '"></span><span class="ctt"><b>' + h(o.t) + '</b></span>' + ck;
+  if (o.open) return '<button type="button" class="crow' + (o.done ? " done" : "") + '" ' + o.open + '>' + inner + '</button>';
+  return '<div class="crow' + (o.done ? " done" : "") + '">' + inner + '</div>';
+}
 function programmeHTML(){
   var di = selDay(), d = parseISO(di), isToday = di === iso(today()), rows = [], dn = doneEvs();
   if (isToday){
-    upcomingBirthdays().filter(function(b){ return b.days === 0; }).forEach(function(b){ rows.push({cat:"famille", ic:CAKE_IC2, t:"Anniversaire de " + b.person, s:"C'est aujourd'hui !", tm:"Journée"}); });
+    upcomingBirthdays().filter(function(b){ return b.days === 0; }).forEach(function(b){ rows.push({cat:"famille", ic:CAKE_IC2, t:"Anniversaire de " + b.person, s:"C'est aujourd'hui !", tm:"Journée", tmc:"Anniv."}); });
     var q = activeQuests()[0], stepI = q ? (q.steps || []).findIndex(function(st){ return !st.done; }) : -1;
-    if (q && stepI >= 0) rows.push({cat:STAT_CAT[q.stat] || "admin", ic:FLAG_IC, t:q.steps[stepI].t, s:"Quête « " + q.title + " »", act:'<span class="prbtn" role="button" tabindex="0" data-act="step" data-id="' + h(q._id) + '" data-i="' + stepI + '">C\'est fait</span>'});
-    dueLinks().slice(0, 2).forEach(function(l){ rows.push({cat:"famille", ic:CHAT_IC, t:l.type === "person" ? "Un mot à " + l.name : l.text, s:l.type === "person" ? (l.days >= 999 ? "Note ton prochain échange" : "Ça fait " + sinceText(l.days)) : l.name, act:'<span class="prbtn" role="button" tabindex="0" data-act="' + (l.type === "person" ? "contacted" : "follow-done") + '" data-id="' + h(l.id) + '">C\'est fait</span>'}); });
+    if (q && stepI >= 0) rows.push({cat:STAT_CAT[q.stat] || "admin", ic:FLAG_IC, t:q.steps[stepI].t, tmc:"Quête", ck:'data-act="step" data-id="' + h(q._id) + '" data-i="' + stepI + '"', s:"Quête « " + q.title + " »", act:'<span class="prbtn" role="button" tabindex="0" data-act="step" data-id="' + h(q._id) + '" data-i="' + stepI + '">C\'est fait</span>'});
+    dueLinks().slice(0, 2).forEach(function(l){ rows.push({cat:"famille", ic:CHAT_IC, tmc:"Lien", ck:'data-act="' + (l.type === "person" ? "contacted" : "follow-done") + '" data-id="' + h(l.id) + '"', t:l.type === "person" ? "Un mot à " + l.name : l.text, s:l.type === "person" ? (l.days >= 999 ? "Note ton prochain échange" : "Ça fait " + sinceText(l.days)) : l.name, act:'<span class="prbtn" role="button" tabindex="0" data-act="' + (l.type === "person" ? "contacted" : "follow-done") + '" data-id="' + h(l.id) + '">C\'est fait</span>'}); });
   }
   var shift = null;
   eventsOn(di).forEach(function(e){
@@ -1193,18 +1227,21 @@ function programmeHTML(){
     var sub = [sp.place, sp.people.length ? "avec " + joinEt(sp.people) : ""].filter(Boolean).join(" · ") || (e.src === "bday" ? "Toute la journée" : "");
     var open = (e.src === "gcal" || e.src === "draft") && !e.todo ? 'data-act="ev-open" ' + (e.src === "gcal" ? 'data-gid="' + h(e.gid) + '" data-d="' + h(e.date || di) + '"' : 'data-id="' + h(e.id) + '"') : "";
     rows.push({cat:e.cat || "neutre", ic:e.src === "bday" ? CAKE_IC2 : null, t:sp.core, s:sub, tm:e.todo ? "Heure ?" : e.time ? fmtTime(e.time) : "Journée", open:open, done:!!dn[evKey(e)],
+      ck:e.todo ? 'data-act="complete-event" data-id="' + h(e.id) + '"' : (e.src === "gcal" || e.src === "draft") ? 'data-act="ev-check" ' + (e.src === "gcal" ? 'data-gid="' + h(e.gid) + '"' : 'data-id="' + h(e.id) + '"') + ' data-d="' + h(di) + '"' : null,
       act:e.todo ? '<span class="prbtn" role="button" tabindex="0" data-act="complete-event" data-id="' + h(e.id) + '">Heure ?</span>' : null});
   });
   var title = isToday ? "Programme du jour" : di === iso(addDays(today(), 1)) ? "Demain" : cap(JOURS_LONG[d.getDay()]) + " " + d.getDate();
   var body = rows.length ? rows.map(progRow).join("") : '<div class="prow empty"><span class="prt"><b>Rien de prévu</b><em>' + (isToday ? "Repose-toi, c'est aussi une mission." : "Journée libre pour l'instant.") + '</em></span></div>';
-  var sh = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
-  return '<section class="section gut" aria-labelledby="pg"><div class="section-head"><h2 id="pg">' + h(title) + '</h2></div>' + calNotice() + sh + '<div class="prows">' + body + '</div></section>';
+  var shBtn = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
+  var MAXR = 3, shown = S.progAll ? rows : rows.slice(0, MAXR), more = rows.length - shown.length;
+  var cbody = rows.length ? shown.map(progRowC).join("") : '<p class="cempty"><b>Rien de prévu</b> · ' + (isToday ? "repose-toi, c'est aussi une mission." : "journée libre pour l'instant.") + '</p>';
+  return '<section class="section gut pgc" aria-labelledby="pg"><div class="card pgcard"><div class="pgh"><h2 id="pg">' + h(title) + '</h2>' + (isToday ? "" : '<button type="button" class="pgback" data-act="day-sel" data-d="' + iso(today()) + '">Aujourd\'hui</button>') + '</div>' + calNotice() + shBtn + '<div class="crows">' + cbody + '</div>'
+    + (more > 0 ? '<button type="button" class="pgmore" data-act="prog-all">+ ' + more + ' autre' + (more > 1 ? "s" : "") + '</button>' : S.progAll && rows.length > MAXR ? '<button type="button" class="pgmore" data-act="prog-all">Réduire</button>' : "") + '</div></section>';
 }
 function viewAccueil(){
   if (typeof S.monthOffset !== "number") S.monthOffset = 0;
-  return weekStripHTML() + programmeHTML()
-    + '<section class="section gut" aria-label="Le mois"><div class="card mcard" id="mBody">' + monthHTML() + '</div></section>'
-    + bdaysHTML();
+  return '<div class="agfit">' + programmeHTML()
+    + '<section class="section gut mfit" aria-label="Le mois"><div class="card mcard" id="mBody">' + monthHTML() + '</div></section></div>';
 }
 /* ---------- Fiche d'un rendez-vous ---------- */
 function remText(rem, time){
@@ -1341,6 +1378,9 @@ function render(){
   html += '<div class="settings-link"><button type="button" data-act="settings">' + GEAR_ICON + 'Paramètres</button></div>';
   if (S.dbState === "off") html = '<section class="section gut" style="margin-top:24px"><div class="card soft-empty">Tes données ne sont pas disponibles pour l\'instant. Vérifie ta connexion, puis recharge l\'appli.</div></section>' + html;
   document.getElementById("view").innerHTML = html;
+  var app0 = document.getElementById("app"); if (app0 && v !== "accueil") app0.style.paddingBottom = "";
+  document.body.classList.toggle("agpage", v === "accueil");
+  if (v === "accueil"){ fitMonth(); requestAnimationFrame(fitMonth); }
   if (v === "notes"){ afterNotesRender(); if (!S.purged && S.notesLoaded){ S.purged = true; purgeOldNotes(); } }
   if (S.evOpen && !document.getElementById("evRoot").hidden) openEvent(S.evOpen.gid, S.evOpen.did, S.evOpen.d, true);
   var inBarV = navOrder().slice(0, 3).indexOf(v) >= 0;
@@ -2306,7 +2346,7 @@ function ensureMonth(m0){
   mcp.callTool(GC, "list_events", {calendarId:CAL, startTime:first + "T00:00:00", endTime:last + "T23:59:00", orderBy:"startTime", pageSize:250}, {cache:{staleTime:300000}}).then(function(r){
     S.gcalExtra[key] = normEvents(r && r.payload);
   }).catch(function(e){ S.gcalExtra[key] = []; S.monthErr[key] = (e && (e.code === "server_unavailable" || e.code === "upstream_error")) ? "Google Agenda ne répond pas pour ce mois. Réessaie dans un moment." : "Les rendez-vous Google Agenda de ce mois ne sont pas disponibles."; }).then(function(){
-    S.monthLoading[key] = false; var mb = document.getElementById("mBody"); if (mb) mb.innerHTML = monthHTML();
+    S.monthLoading[key] = false; var mb = document.getElementById("mBody"); if (mb){ mb.innerHTML = monthHTML(); fitMonth(); }
   });
 }
 function evLine(e){ return '<div class="ev"><div class="ev-body"><span class="ev-t">' + h(e.title) + '</span><span class="ev-m">' + h(e.todo ? "Heure à compléter" : (e.time ? fmtTime(e.time) : "Toute la journée") + (e.meta ? " · " + e.meta : "")) + '</span></div>' + evEditBtn(e) + '</div>'; }
@@ -2315,7 +2355,7 @@ function evEditBtn(e){
   if (e.src === "draft") return '<button type="button" class="ev-edit" data-act="ev-edit" data-id="' + h(e.id) + '" aria-label="Modifier « ' + h(e.title) + ' »">' + PENCIL + '</button>';
   return "";
 }
-function afterCalChange(){ try { mcp.invalidate(); } catch(e){} var mb = document.getElementById("mBody"); if (mb) mb.innerHTML = monthHTML(); }
+function afterCalChange(){ try { mcp.invalidate(); } catch(e){} var mb = document.getElementById("mBody"); if (mb){ mb.innerHTML = monthHTML(); fitMonth(); } }
 function eventEditSheet(gid, did){
   var g = gid ? gcalAll().find(function(e){ return e.id === gid; }) : null;
   var it = did ? S.items.find(function(i){ return i._id === did; }) : null;
@@ -2375,6 +2415,8 @@ function monthHTML(){
   var t = today(), m0 = new Date(t.getFullYear(), t.getMonth() + S.monthOffset, 1), dim = new Date(m0.getFullYear(), m0.getMonth()+1, 0).getDate();
   var key = monthKey(m0); ensureMonth(m0);
   if (!S.monthSel || S.monthSel.slice(0,7) !== key) S.monthSel = (monthKey(t) === key) ? iso(t) : iso(m0);
+  var fit = S.view === "accueil";
+  if (fit){ var sd = selDay(); S.monthSel = sd.slice(0,7) === key ? sd : null; }
   var lead = (m0.getDay() + 6) % 7, cells = [];
   ["lun","mar","mer","jeu","ven","sam","dim"].forEach(function(d){ cells.push('<div class="h" aria-hidden="true">' + d + '</div>'); });
   var nEv = 0, nBd = 0;
@@ -2390,14 +2432,23 @@ function monthHTML(){
       return '<i style="background:' + (e.cat === "neutre" || !CAT_COL[e.cat] ? "#F1F1F4" : C[0]) + ';color:' + C[1] + '">' + h(sp.core) + '</i>';
     }).join("") + (evs.length > 2 ? '<em>+' + (evs.length - 1) + '</em>' : "") + '</span>' + (shift && shift.time ? '<span class="mshift" aria-label="Théo travaille à ' + fmtTime(shift.time) + '"><i aria-hidden="true">T</i>' + fmtTime(shift.time) + '</span>' : "") + (trip ? '<span class="mvac" aria-hidden="true">' + WAVE_IC + '<b>' + h(trip.dest) + '</b></span>' : "") + '</button>');
   }
-  var sel = parseISO(S.monthSel), selEvs = eventsOn(S.monthSel);
+  var sel = parseISO(S.monthSel || iso(m0)), selEvs = eventsOn(S.monthSel || iso(m0));
   var panel = '<div class="mpanel"><div class="wdate' + (S.monthSel === iso(t) ? " today" : "") + '"><small>' + JOURS[sel.getDay()].replace(".","") + '</small><b>' + sel.getDate() + '</b></div><div style="min-width:0">'
     + (S.monthLoading[key] ? '<p class="wfree">Je récupère ton agenda…</p>' : selEvs.length ? '<div class="wevs">' + selEvs.map(evCard).join("") + '</div>' : '<p class="wfree" style="padding-top:10px">Libre</p>')
     + (S.monthErr[key] ? '<p class="notice" style="margin:8px 0 0">' + h(S.monthErr[key]) + '</p>' : "") + '</div></div>';
   return '<div class="row" style="justify-content:space-between"><button type="button" class="btn light" data-act="mprev" aria-label="Mois précédent">‹</button><h3 style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.01em">' + cap(MOIS[m0.getMonth()]) + ' ' + m0.getFullYear() + '</h3><button type="button" class="btn light" data-act="mnext" aria-label="Mois suivant">›</button></div>'
-    + (nEv || nBd ? '<p class="msum"><span>' + (nEv ? nEv + " rendez-vous" : "") + (nEv && nBd ? "</span> ce mois · " : nEv ? "</span> ce mois" : "") + (nBd ? (nEv ? "" : "<span>") + nBd + " anniversaire" + (nBd > 1 ? "s" : "") + (nEv ? "" : "</span> ce mois") : "") + '</p>' : "")
-    + '<div class="month">' + cells.join("") + '</div>' + panel;
+    + (!fit && (nEv || nBd) ? '<p class="msum"><span>' + (nEv ? nEv + " rendez-vous" : "") + (nEv && nBd ? "</span> ce mois · " : nEv ? "</span> ce mois" : "") + (nBd ? (nEv ? "" : "<span>") + nBd + " anniversaire" + (nBd > 1 ? "s" : "") + (nEv ? "" : "</span> ce mois") : "") + '</p>' : "")
+    + '<div class="month">' + cells.join("") + '</div>' + (fit ? "" : panel);
 }
+function fitMonth(){
+  var g = S.view === "accueil" && document.querySelector("#mBody .month"); if (!g) return;
+  var n = Math.ceil(g.querySelectorAll(".mcell").length / 7), nav = document.querySelector("nav.tabs");
+  var bottom = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+  var app = document.getElementById("app"); if (app) app.style.paddingBottom = Math.max(0, window.innerHeight - bottom + 4) + "px";
+  var avail = bottom - g.getBoundingClientRect().top - g.querySelector(".h").offsetHeight - 30;
+  g.style.setProperty("--mrow", Math.max(54, Math.min(110, Math.floor(avail / n))) + "px");
+}
+window.addEventListener("resize", function(){ fitMonth(); });
 function settingsHTML(){
   var st = S.settings || {}, topics = st.topics || [];
   var bd = st.birthday ? "2000-" + st.birthday : "";
@@ -3056,9 +3107,12 @@ document.addEventListener("click", function(e){
   var act = b.dataset.act, id = b.dataset.id;
   if (act === "close"){ closeSheet(); return; }
   if (/^(note-|ne-|fmt$|fig-|aud-|rec-|dp-|pick-folder$|folder-)/.test(act) && noteAction(act, b)) return;
+  if (act === "mday" && S.view === "accueil"){ S.daySel = b.dataset.d; S.daySelAt = Date.now(); S.progAll = false; render(); return; }
+  if (act === "ev-check"){ S.evOpen = {gid:b.dataset.gid || null, did:b.dataset.id || null, d:b.dataset.d || null}; evDone(); return; }
+  if (act === "prog-all"){ S.progAll = !S.progAll; render(); return; }
   if (act === "mday"){ S.monthSel = b.dataset.d; document.getElementById("mBody").innerHTML = monthHTML(); var fb2 = document.querySelector('.mcell[data-d="' + S.monthSel + '"]'); if (fb2) fb2.focus({preventScroll:true}); return; }
   if (act === "month"){ S.monthOffset = 0; S.monthSel = null; openSheet("Le mois", '<div id="mBody">' + monthHTML() + '</div>'); return; }
-  if (act === "mprev" || act === "mnext"){ S.monthOffset += act === "mnext" ? 1 : -1; document.getElementById("mBody").innerHTML = monthHTML(); return; }
+  if (act === "mprev" || act === "mnext"){ S.monthOffset += act === "mnext" ? 1 : -1; document.getElementById("mBody").innerHTML = monthHTML(); fitMonth(); return; }
   if (act === "settings"){ openSheet("Réglages", settingsHTML(), mountSettings); return; }
   if (act === "gcal-change"){ if (mcp && mcp.connect) mcp.connect(true).then(function(){ toast("Compte Google Agenda mis à jour."); refreshSettings(); }).catch(function(){ toast("Le changement de compte n'a pas abouti."); }); return; }
   if (act === "gcal-off"){ if (mcp && mcp.disconnect){ mcp.disconnect(); S.gcal = []; toast("Google Agenda est déconnecté."); refreshSettings(); } return; }
@@ -3076,7 +3130,7 @@ document.addEventListener("click", function(e){
   if (act === "ev-open"){ openEvent(b.dataset.gid || null, b.dataset.id || null, b.dataset.d || null); return; }
   if (act === "ev-close"){ closeEvent(); return; }
   if (act === "ev-done"){ evDone(); return; }
-  if (act === "day-sel"){ S.daySel = b.dataset.d; render(); return; }
+  if (act === "day-sel"){ S.daySel = b.dataset.d; S.daySelAt = 0; S.progAll = false; if (S.view === "accueil") S.monthOffset = 0; render(); return; }
   if (act === "week-off"){ S.weekOff = Math.max(0, (S.weekOff || 0) + (+b.dataset.n)); var m0 = addDays(monday(today()), 7 * S.weekOff); S.daySel = S.weekOff ? iso(m0) : iso(today()); render(); return; }
   if (act === "bday-all"){ bdayAllSheet(); return; }
   if (act === "import"){ var fi = document.getElementById("impFile"); if (fi) fi.click(); return; }
