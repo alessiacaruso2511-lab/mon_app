@@ -816,7 +816,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.31";
+var APP_VERSION = "Planner_0.32";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -1249,7 +1249,7 @@ function programmeHTML(){
   });
   var title = isToday ? "Programme du jour" : di === iso(addDays(today(), 1)) ? "Demain" : cap(JOURS_LONG[d.getDay()]) + " " + d.getDate();
   var body = rows.length ? rows.map(progRow).join("") : '<div class="prow empty"><span class="prt"><b>Rien de prévu</b><em>' + (isToday ? "Repose-toi, c'est aussi une mission." : "Journée libre pour l'instant.") + '</em></span></div>';
-  var shBtn = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
+  var shBtn = shift ? '<button type="button" class="prshift" data-act="ev-open" data-gid="' + h(shift.gid) + '" data-d="' + h(shift.date || di) + '"><span class="dot" aria-hidden="true"></span>Théo travaille' + (shift.time && shift.endTime && minsOf(shift.endTime) < minsOf(shift.time) ? " de nuit, de " + fmtTime(shift.time) + " à " + fmtTime(shift.endTime) : shift.time ? " de " + fmtTime(shift.time) + (shift.endTime ? " à " + fmtTime(shift.endTime) : "") : "") + '</button>' : "";
   var budget = shift ? 2 : 3, shown = S.progAll ? rows : rows.slice(0, budget), more = rows.length - shown.length, MAXR = budget;
   S.progPast = nPast;
   var cbody = rows.length ? shown.map(progRowC).join("") : nPast ? '<p class="cempty"><b>Tout est passé pour aujourd\'hui</b> · profite de ta soirée.</p>' : '<p class="cempty"><b>Rien de prévu</b> · ' + (isToday ? "repose-toi, c'est aussi une mission." : "journée libre pour l'instant.") + '</p>';
@@ -2490,7 +2490,7 @@ function planningParse(items){
     heads.forEach(function(hh){ var dx = hh.x - c.min; if (dx > -10 && dx < 70 && (!best || Math.abs(dx - 15) < Math.abs(best.x - c.min - 15))) best = hh; });
     c.m = best ? PLAN_MONTHS.findIndex(function(r){ return r.test(best.s); }) : (cols.length === 12 ? k : -1);
   });
-  var codes = all.filter(function(i){ return !/^[LMJVSD]\s*\d{1,2}$/.test(i.s) && /^(\d{3,4}|\d{1,2}[h:]\d{2}|[A-Z*]{1,4}\*?)$/.test(i.s); });
+  var codes = all.filter(function(i){ return !/^[LMJVSD]\s*\d{1,2}$/.test(i.s) && /^(\d{3,4}|\d{1,2}[h:]\d{2}|[A-Za-zÀ-ÿ*]{1,6}\*?)$/.test(i.s) && !PLAN_MONTHS.some(function(r){ return r.test(i.s); }); });
   var days = [];
   labels.forEach(function(l){
     var ci = cols.findIndex(function(c){ return l.x >= c.min - 1 && l.x <= c.max + 1; }), c = cols[ci], nx = cols[ci + 1] ? cols[ci + 1].min : 1e9;
@@ -2500,7 +2500,8 @@ function planningParse(items){
     var code = codes.find(function(i){ return Math.abs(i.y - l.y) < 3 && i.x > l.x + 8 && i.x < nx - 2; });
     var raw = code ? code.s : "", m = raw.match(/^(\d{1,2})[h:]?(\d{2})$/), time = null;
     if (m && +m[1] < 24 && +m[2] < 60) time = (m[1].length < 2 ? "0" : "") + m[1] + ":" + m[2];
-    days.push({date: year + "-" + String(c.m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0"), code: raw, time: time});
+    var night = /^nuit$/i.test(raw); if (night) time = "23:00";
+    days.push({date: year + "-" + String(c.m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0"), code: raw, time: time, night: night});
   });
   days.sort(function(a, b){ return a.date < b.date ? -1 : 1; });
   if (!days.length) return {error:"Je n'ai trouvé aucun jour dans ce PDF."};
@@ -2509,7 +2510,8 @@ function planningParse(items){
 
 var PLAN = null;
 function planLen(){ return (S.settings && S.settings.shiftLen) || 450; }
-function planEnd(date, time, len){ var d = parseISO(date), m = minsOf(time) + len; d = addDays(d, Math.floor(m / 1440)); m = m % 1440; return [iso(d), String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0")]; }
+function planEnd(date, time, len, night){ if (night) return [iso(addDays(parseISO(date), 1)), "06:30"]; return planEnd0(date, time, len); }
+function planEnd0(date, time, len){ var d = parseISO(date), m = minsOf(time) + len; d = addDays(d, Math.floor(m / 1440)); m = m % 1440; return [iso(d), String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0")]; }
 function planRead(file){
   return import("./lib/pdfjs/pdf.min.js").then(function(pdfjs){
     pdfjs.GlobalWorkerOptions.workerSrc = "lib/pdfjs/pdf.worker.min.js";
@@ -2528,26 +2530,28 @@ function planDiff(r){
   return mcp.callTool(GC, "list_events", {calendarId:CAL, startTime:first + "T00:00:00", endTime:iso(addDays(parseISO(last), 1)) + "T12:00:00", orderBy:"startTime", pageSize:2500}).then(function(res){
     var evs = ((res && res.payload && res.payload.events) || []).filter(function(e){ return isShift({title:e.summary}); }), by = {};
     evs.forEach(function(e){ var a = (e.start && e.start.dateTime) || "", b = (e.end && e.end.dateTime) || ""; if (!a) return; (by[a.slice(0, 10)] = by[a.slice(0, 10)] || []).push({id:e.id, time:a.slice(11, 16), end:b.slice(11, 16)}); });
-    var ops = [];
+    var ops = [], ok = 0;
     days.forEach(function(d){
       var ex = by[d.date] || [];
       if (d.time){
-        var en = planEnd(d.date, d.time, len)[1];
-        if (!ex.length) ops.push({op:"add", date:d.date, time:d.time});
-        else { if (ex[0].time !== d.time || ex[0].end !== en) ops.push({op:"move", date:d.date, time:d.time, from:ex[0].time, id:ex[0].id}); ex.slice(1).forEach(function(x){ ops.push({op:"del", date:d.date, time:x.time, id:x.id}); }); }
-      } else ex.forEach(function(x){ ops.push({op:"del", date:d.date, time:x.time, id:x.id, code:d.code}); });
+        var en = planEnd(d.date, d.time, len, d.night)[1];
+        if (!ex.length) ops.push({op:"add", date:d.date, time:d.time, night:d.night});
+        else { if (ex[0].time !== d.time || ex[0].end !== en) ops.push({op:"move", date:d.date, time:d.time, night:d.night, from:ex[0].time, id:ex[0].id}); else ok++; ex.slice(1).forEach(function(x){ ops.push({op:"del", date:d.date, time:x.time, id:x.id}); }); }
+      } else { if (!ex.length) ok++; ex.forEach(function(x){ ops.push({op:"del", date:d.date, time:x.time, id:x.id, code:d.code}); }); }
     });
-    return {who:r.who, year:r.year, first:first, last:last, ops:ops, nWork:days.filter(function(d){ return d.time; }).length};
+    return {who:r.who, year:r.year, first:first, last:last, ops:ops, ok:ok, nDays:days.length, nWork:days.filter(function(d){ return d.time; }).length, nNight:days.filter(function(d){ return d.night; }).length};
   });
 }
 function planDay(d){ var x = parseISO(d); return JOURS_L[x.getDay()].slice(0, 3) + ". " + x.getDate() + " " + MOIS_COURT[x.getMonth()].toLowerCase(); }
 function planPrevHTML(P){
   var n = function(k){ return P.ops.filter(function(o){ return o.op === k; }).length; };
-  var lines = P.ops.slice(0, 8).map(function(o){
-    var w = o.op === "add" ? "ajouté · " + fmtTime(o.time) : o.op === "move" ? fmtTime(o.from) + " → " + fmtTime(o.time) : "retiré" + (o.code ? " (" + o.code + ")" : "");
+  var lim = P.all ? P.ops.length : 8;
+  var lines = P.ops.slice(0, lim).map(function(o){
+    var tt = function(t, nt){ return nt ? "nuit (23h – 6h30)" : fmtTime(t); };
+    var w = o.op === "add" ? "ajouté · " + tt(o.time, o.night) : o.op === "move" ? fmtTime(o.from) + " → " + tt(o.time, o.night) : "retiré" + (o.code ? " (" + o.code + ")" : "");
     return '<div class="list-line"><span>' + h(planDay(o.date)) + '</span><span class="pl-w pl-' + o.op + '">' + h(w) + '</span></div>';
-  }).join("") + (P.ops.length > 8 ? '<p class="soft-empty" style="padding:4px 0 0">et ' + (P.ops.length - 8) + ' autre' + (P.ops.length - 8 > 1 ? "s" : "") + '…</p>' : "");
-  return '<div class="card plcard"><p class="pl-t">' + h(P.who || "Planning") + ' · ' + P.year + '</p><p class="pl-s">Du ' + h(planDay(P.first)) + ' au ' + h(planDay(P.last)) + ' : ' + P.nWork + ' services de ' + h(planDur(planLen())) + '.</p>'
+  }).join("") + (P.ops.length > lim ? '<button type="button" class="pgmore" data-act="plan-all" style="margin-top:8px">Voir les ' + P.ops.length + ' changements</button>' : "");
+  return '<div class="card plcard"><p class="pl-t">' + h(P.who || "Planning") + ' · ' + P.year + '</p><p class="pl-s">Du ' + h(planDay(P.first)) + ' au ' + h(planDay(P.last)) + ' : ' + P.nWork + ' services de ' + h(planDur(planLen())) + (P.nNight ? ", dont " + P.nNight + " de nuit (23h → 6h30)" : "") + '.</p><p class="pl-s">' + P.nDays + ' jours vérifiés · ' + P.ok + ' déjà à jour.</p>'
     + (P.ops.length ? '<div class="pl-chips">' + (n("add") ? '<span>+ ' + n("add") + ' à ajouter</span>' : "") + (n("move") ? '<span>' + n("move") + ' horaire' + (n("move") > 1 ? "s" : "") + ' changé' + (n("move") > 1 ? "s" : "") + '</span>' : "") + (n("del") ? '<span>' + n("del") + ' à retirer</span>' : "") + '</div>' + lines
       + '<div class="bk-row" style="margin-top:12px"><button type="button" class="btn" data-act="plan-apply" style="background:var(--ink);color:#FFFFFF">Mettre à jour</button><button type="button" class="btn light" data-act="plan-cancel">Annuler</button></div>'
       : '<p class="pl-ok">Ton agenda est déjà à jour avec ce planning.</p>') + '</div>';
@@ -2559,7 +2563,7 @@ function planApply(){
   var step = function(){
     if (box) box.innerHTML = '<div class="card plcard"><p class="pl-t">Mise à jour de ton agenda…</p><p class="pl-s">' + done + ' / ' + ops.length + '</p></div>';
     var o = ops[done + fail]; if (!o) return Promise.resolve();
-    var e = o.time ? planEnd(o.date, o.time, len) : null, call;
+    var e = o.time ? planEnd(o.date, o.time, len, o.night) : null, call;
     if (o.op === "add") call = mcp.callTool(GC, "create_event", {calendarId:CAL, summary:"Théo au travail", startTime:o.date + "T" + o.time + ":00", endTime:e[0] + "T" + e[1] + ":00", colorId:"8", transparency:"transparent", overrideReminders:[]});
     else if (o.op === "move") call = mcp.callTool(GC, "patch_event", {calendarId:CAL, eventId:o.id, body:{start:{dateTime:o.date + "T" + o.time + ":00", timeZone:"Europe/Paris"}, end:{dateTime:e[0] + "T" + e[1] + ":00", timeZone:"Europe/Paris"}}});
     else call = mcp.callTool(GC, "delete_event", {calendarId:CAL, eventId:o.id});
@@ -3281,6 +3285,7 @@ document.addEventListener("click", function(e){
   if (act === "import"){ var fi = document.getElementById("impFile"); if (fi) fi.click(); return; }
   if (act === "plan-pick"){ var pf = document.getElementById("thFile"); if (pf) pf.click(); return; }
   if (act === "plan-apply"){ planApply(); return; }
+  if (act === "plan-all"){ if (PLAN){ PLAN.all = true; document.getElementById("thPrev").innerHTML = planPrevHTML(PLAN); } return; }
   if (act === "plan-cancel"){ PLAN = null; var pb = document.getElementById("thPrev"); if (pb) pb.innerHTML = ""; return; }
   if (act === "signout"){ if (window.APP_SIGNOUT) window.APP_SIGNOUT(); return; }
   if (act === "topic"){ S.topicFilter = b.dataset.t; render(); return; }
