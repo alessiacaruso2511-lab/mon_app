@@ -2511,8 +2511,8 @@ var PLAN = null;
 function planLen(){ return (S.settings && S.settings.shiftLen) || 450; }
 function planEnd(date, time, len){ var d = parseISO(date), m = minsOf(time) + len; d = addDays(d, Math.floor(m / 1440)); m = m % 1440; return [iso(d), String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0")]; }
 function planRead(file){
-  return import("./lib/pdfjs/pdf.min.mjs").then(function(pdfjs){
-    pdfjs.GlobalWorkerOptions.workerSrc = "lib/pdfjs/pdf.worker.min.mjs";
+  return import("./lib/pdfjs/pdf.min.js").then(function(pdfjs){
+    pdfjs.GlobalWorkerOptions.workerSrc = "lib/pdfjs/pdf.worker.min.js";
     return file.arrayBuffer().then(function(buf){ return pdfjs.getDocument({data:new Uint8Array(buf)}).promise; });
   }).then(function(doc){
     var all = [], p = Promise.resolve();
