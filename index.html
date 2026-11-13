@@ -393,6 +393,11 @@ nav.tabs a[aria-current="page"]{background:var(--band);color:var(--ink);font-wei
 .field label{font-size:13px;font-weight:800;color:var(--muted)}
 .field input,.field select{box-sizing:border-box;width:100%;height:48px;border:1.5px solid var(--line);background:#FFFFFF;border-radius:10px;padding:0 14px;font-size:16px;color:var(--text)}
 .bk-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plcard{margin-top:12px;padding:14px}
+.pl-t{margin:0;font-size:15px;font-weight:800}.pl-s{margin:2px 0 8px;font-size:13px;font-weight:700;color:var(--muted)}
+.pl-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.pl-chips span{background:#EEF5FC;color:#2C679C;border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:800}
+.pl-w{font-weight:800}.pl-add{color:#2F7440}.pl-move{color:#2C679C}.pl-del{color:#A8402F}
+.pl-ok{margin:4px 0 0;font-size:14px;font-weight:800;color:#2F7440}.pl-err{margin:0;font-size:14px;font-weight:800;color:#A8402F}
 .bk-row .btn{box-sizing:border-box;height:48px;min-height:0;padding:0 12px}
 .fgrid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
 .fgrid .field{margin:0;min-width:0}
@@ -811,7 +816,7 @@ body.agpage .settings-link{display:none}
 
 
 <script>
-var APP_VERSION = "Planner_0.30";
+var APP_VERSION = "Planner_0.31";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -2468,6 +2473,126 @@ function fitMonth(){
   g.style.setProperty("--mrow", Math.max(54, Math.min(110, Math.floor(avail / n))) + "px");
 }
 window.addEventListener("resize", function(){ fitMonth(); });
+/* Lecture du planning PDF de Théo (texte + positions extraits par pdf.js) */
+var PLAN_MONTHS = [/^jan/i, /^f\S{0,2}vr/i, /^mars/i, /^avr/i, /^mai/i, /^juin/i, /^juil/i, /^ao/i, /^sep/i, /^oct/i, /^nov/i, /^d\S{0,2}c/i];
+function planningParse(items){
+  var all = items.map(function(i){ return {s:String(i.s).replace(/\s+/g, " ").trim(), x:i.x, y:i.y}; }).filter(function(i){ return i.s; });
+  var txt = all.map(function(i){ return i.s; }).join(" ");
+  var ym = txt.match(/Ann\S{0,3}e\s*(\d{4})/i) || txt.match(/\b(20\d\d)\b/), year = ym ? +ym[1] : new Date().getFullYear();
+  var whoI = all.find(function(i){ return /\(\d{2,}\)\s*$/.test(i.s); }), who = whoI ? whoI.s.replace(/\s*\(\d+\)\s*$/, "") : "";
+  var labels = all.filter(function(i){ return /^[LMJVSD]\s*\d{1,2}$/.test(i.s); });
+  if (labels.length < 20) return {error:"Je ne reconnais pas un planning dans ce PDF."};
+  var xs = labels.map(function(l){ return l.x; }).sort(function(a, b){ return a - b; }), cols = [];
+  xs.forEach(function(x){ if (!cols.length || x - cols[cols.length - 1].max > 20) cols.push({min:x, max:x}); else cols[cols.length - 1].max = x; });
+  var heads = all.filter(function(i){ return PLAN_MONTHS.some(function(r){ return r.test(i.s); }) && i.s.length < 12; });
+  cols.forEach(function(c, k){
+    var best = null;
+    heads.forEach(function(hh){ var dx = hh.x - c.min; if (dx > -10 && dx < 70 && (!best || Math.abs(dx - 15) < Math.abs(best.x - c.min - 15))) best = hh; });
+    c.m = best ? PLAN_MONTHS.findIndex(function(r){ return r.test(best.s); }) : (cols.length === 12 ? k : -1);
+  });
+  var codes = all.filter(function(i){ return !/^[LMJVSD]\s*\d{1,2}$/.test(i.s) && /^(\d{3,4}|\d{1,2}[h:]\d{2}|[A-Z*]{1,4}\*?)$/.test(i.s); });
+  var days = [];
+  labels.forEach(function(l){
+    var ci = cols.findIndex(function(c){ return l.x >= c.min - 1 && l.x <= c.max + 1; }), c = cols[ci], nx = cols[ci + 1] ? cols[ci + 1].min : 1e9;
+    if (!c || c.m < 0) return;
+    var d = +l.s.replace(/\D/g, ""), dt = new Date(year, c.m, d);
+    if (dt.getMonth() !== c.m) return;
+    var code = codes.find(function(i){ return Math.abs(i.y - l.y) < 3 && i.x > l.x + 8 && i.x < nx - 2; });
+    var raw = code ? code.s : "", m = raw.match(/^(\d{1,2})[h:]?(\d{2})$/), time = null;
+    if (m && +m[1] < 24 && +m[2] < 60) time = (m[1].length < 2 ? "0" : "") + m[1] + ":" + m[2];
+    days.push({date: year + "-" + String(c.m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0"), code: raw, time: time});
+  });
+  days.sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+  if (!days.length) return {error:"Je n'ai trouvé aucun jour dans ce PDF."};
+  return {year: year, who: who, days: days};
+}
+
+var PLAN = null;
+function planLen(){ return (S.settings && S.settings.shiftLen) || 450; }
+function planEnd(date, time, len){ var d = parseISO(date), m = minsOf(time) + len; d = addDays(d, Math.floor(m / 1440)); m = m % 1440; return [iso(d), String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0")]; }
+function planRead(file){
+  return import("./lib/pdfjs/pdf.min.mjs").then(function(pdfjs){
+    pdfjs.GlobalWorkerOptions.workerSrc = "lib/pdfjs/pdf.worker.min.mjs";
+    return file.arrayBuffer().then(function(buf){ return pdfjs.getDocument({data:new Uint8Array(buf)}).promise; });
+  }).then(function(doc){
+    var all = [], p = Promise.resolve();
+    for (var n = 1; n <= Math.min(doc.numPages, 4); n++) (function(n){ p = p.then(function(){ return doc.getPage(n); }).then(function(pg){ return pg.getTextContent(); }).then(function(tc){ tc.items.forEach(function(i){ all.push({s:i.str, x:i.transform[4], y:i.transform[5] - n * 10000}); }); }); })(n);
+    return p.then(function(){ return planningParse(all); });
+  });
+}
+function planDiff(r){
+  var t = iso(today()), len = planLen();
+  var days = r.days.filter(function(d){ return d.date >= t && d.code; });
+  if (!days.length) return Promise.reject({msg:"Ce planning ne contient aucun jour à venir."});
+  var first = days[0].date, last = days[days.length - 1].date;
+  return mcp.callTool(GC, "list_events", {calendarId:CAL, startTime:first + "T00:00:00", endTime:iso(addDays(parseISO(last), 1)) + "T12:00:00", orderBy:"startTime", pageSize:2500}).then(function(res){
+    var evs = ((res && res.payload && res.payload.events) || []).filter(function(e){ return isShift({title:e.summary}); }), by = {};
+    evs.forEach(function(e){ var a = (e.start && e.start.dateTime) || "", b = (e.end && e.end.dateTime) || ""; if (!a) return; (by[a.slice(0, 10)] = by[a.slice(0, 10)] || []).push({id:e.id, time:a.slice(11, 16), end:b.slice(11, 16)}); });
+    var ops = [];
+    days.forEach(function(d){
+      var ex = by[d.date] || [];
+      if (d.time){
+        var en = planEnd(d.date, d.time, len)[1];
+        if (!ex.length) ops.push({op:"add", date:d.date, time:d.time});
+        else { if (ex[0].time !== d.time || ex[0].end !== en) ops.push({op:"move", date:d.date, time:d.time, from:ex[0].time, id:ex[0].id}); ex.slice(1).forEach(function(x){ ops.push({op:"del", date:d.date, time:x.time, id:x.id}); }); }
+      } else ex.forEach(function(x){ ops.push({op:"del", date:d.date, time:x.time, id:x.id, code:d.code}); });
+    });
+    return {who:r.who, year:r.year, first:first, last:last, ops:ops, nWork:days.filter(function(d){ return d.time; }).length};
+  });
+}
+function planDay(d){ var x = parseISO(d); return JOURS_L[x.getDay()].slice(0, 3) + ". " + x.getDate() + " " + MOIS_COURT[x.getMonth()].toLowerCase(); }
+function planPrevHTML(P){
+  var n = function(k){ return P.ops.filter(function(o){ return o.op === k; }).length; };
+  var lines = P.ops.slice(0, 8).map(function(o){
+    var w = o.op === "add" ? "ajouté · " + fmtTime(o.time) : o.op === "move" ? fmtTime(o.from) + " → " + fmtTime(o.time) : "retiré" + (o.code ? " (" + o.code + ")" : "");
+    return '<div class="list-line"><span>' + h(planDay(o.date)) + '</span><span class="pl-w pl-' + o.op + '">' + h(w) + '</span></div>';
+  }).join("") + (P.ops.length > 8 ? '<p class="soft-empty" style="padding:4px 0 0">et ' + (P.ops.length - 8) + ' autre' + (P.ops.length - 8 > 1 ? "s" : "") + '…</p>' : "");
+  return '<div class="card plcard"><p class="pl-t">' + h(P.who || "Planning") + ' · ' + P.year + '</p><p class="pl-s">Du ' + h(planDay(P.first)) + ' au ' + h(planDay(P.last)) + ' : ' + P.nWork + ' services de ' + h(planDur(planLen())) + '.</p>'
+    + (P.ops.length ? '<div class="pl-chips">' + (n("add") ? '<span>+ ' + n("add") + ' à ajouter</span>' : "") + (n("move") ? '<span>' + n("move") + ' horaire' + (n("move") > 1 ? "s" : "") + ' changé' + (n("move") > 1 ? "s" : "") + '</span>' : "") + (n("del") ? '<span>' + n("del") + ' à retirer</span>' : "") + '</div>' + lines
+      + '<div class="bk-row" style="margin-top:12px"><button type="button" class="btn" data-act="plan-apply" style="background:var(--ink);color:#FFFFFF">Mettre à jour</button><button type="button" class="btn light" data-act="plan-cancel">Annuler</button></div>'
+      : '<p class="pl-ok">Ton agenda est déjà à jour avec ce planning.</p>') + '</div>';
+}
+function planDur(m){ return Math.floor(m / 60) + " h" + (m % 60 ? " " + String(m % 60).padStart(2, "0") : ""); }
+function planApply(){
+  if (!PLAN || !PLAN.ops.length) return;
+  var box = document.getElementById("thPrev"), ops = PLAN.ops.slice(), done = 0, fail = 0, len = planLen();
+  var step = function(){
+    if (box) box.innerHTML = '<div class="card plcard"><p class="pl-t">Mise à jour de ton agenda…</p><p class="pl-s">' + done + ' / ' + ops.length + '</p></div>';
+    var o = ops[done + fail]; if (!o) return Promise.resolve();
+    var e = o.time ? planEnd(o.date, o.time, len) : null, call;
+    if (o.op === "add") call = mcp.callTool(GC, "create_event", {calendarId:CAL, summary:"Théo au travail", startTime:o.date + "T" + o.time + ":00", endTime:e[0] + "T" + e[1] + ":00", colorId:"8", transparency:"transparent", overrideReminders:[]});
+    else if (o.op === "move") call = mcp.callTool(GC, "patch_event", {calendarId:CAL, eventId:o.id, body:{start:{dateTime:o.date + "T" + o.time + ":00", timeZone:"Europe/Paris"}, end:{dateTime:e[0] + "T" + e[1] + ":00", timeZone:"Europe/Paris"}}});
+    else call = mcp.callTool(GC, "delete_event", {calendarId:CAL, eventId:o.id});
+    return call.then(function(){ done++; }, function(){ fail++; }).then(step);
+  };
+  step().then(function(){
+    PLAN = null; if (box) box.innerHTML = '<div class="card plcard"><p class="pl-ok">' + (fail ? "Agenda mis à jour, sauf " + fail + " changement" + (fail > 1 ? "s" : "") + " : réessaie dans un moment." : "C'est fait : les horaires de Théo sont à jour dans ton agenda.") + '</p></div>';
+    toast(fail ? "Mise à jour incomplète." : "Planning de Théo mis à jour."); afterCalChange();
+  });
+}
+function mountPlan(){
+  var f = document.getElementById("thFile"), sel = document.getElementById("thLen"), box = document.getElementById("thPrev");
+  if (sel) sel.onchange = function(){ saveSettings({shiftLen:+sel.value}); };
+  if (!f) return;
+  f.onchange = function(){
+    var file = f.files && f.files[0]; f.value = ""; if (!file) return;
+    if (!mcp){ toast("Connecte d'abord Google Agenda."); return; }
+    box.innerHTML = '<div class="card plcard"><p class="pl-t">Lecture du planning…</p></div>';
+    planRead(file).then(function(r){
+      if (r.error) throw {msg:r.error};
+      return planDiff(r);
+    }).then(function(P){ PLAN = P; box.innerHTML = planPrevHTML(P); }).catch(function(e){
+      PLAN = null; box.innerHTML = '<div class="card plcard"><p class="pl-err">' + h((e && e.msg) || (e && e.code === "needs_auth" ? "Resynchronise Google Agenda puis réessaie." : "Je n'ai pas réussi à lire ce PDF.")) + '</p></div>';
+    });
+  };
+}
+function planSettingsHTML(){
+  var len = planLen(), opts = "";
+  for (var m = 360; m <= 600; m += 30) opts += '<option value="' + m + '"' + (m === len ? " selected" : "") + '>' + planDur(m) + '</option>';
+  return '<h3 style="margin:26px 0 6px">Planning de Théo</h3><p style="font-size:13px;color:var(--muted);margin-bottom:10px">Importe le PDF de son planning : l\'appli ajoute, déplace ou retire ses services dans ton agenda, à partir d\'aujourd\'hui. Tu vois les changements avant de valider.</p>'
+    + '<div class="fgrid" style="margin-bottom:10px"><div class="field"><label for="thLen">Durée d\'un service</label><select id="thLen">' + opts + '</select></div></div>'
+    + '<button type="button" class="btn light" data-act="plan-pick" style="width:100%">Choisir le PDF du planning</button><input type="file" id="thFile" accept="application/pdf,.pdf" hidden><div id="thPrev"></div>';
+}
 function settingsHTML(){
   var st = S.settings || {}, topics = st.topics || [];
   var bd = st.birthday ? "2000-" + st.birthday : "";
@@ -2479,6 +2604,7 @@ function settingsHTML(){
     + '<h3 style="margin-bottom:6px">Sujets de la Gazette</h3><div>' + topics.map(function(t){ return '<div class="list-line"><span>' + h(t) + '</span><button type="button" class="mini" data-act="del-topic" data-t="' + h(t) + '">Retirer</button></div>'; }).join("") + '</div>'
     + '<form id="fT" class="fgrid" style="margin-top:12px"><div class="field"><label for="tName">Nouveau sujet</label><input id="tName" type="text" required placeholder="Un acteur, une série, un lieu…"></div><button class="btn green" type="submit">Ajouter</button></form>'
     + learnSettingsHTML()
+    + planSettingsHTML()
     + '<h3 style="margin:26px 0 6px">Google Agenda</h3>' + gcalSettingsHTML()
     + '<h3 style="margin:26px 0 6px">Sauvegarde</h3><p style="font-size:13px;color:var(--muted);margin-bottom:10px">Télécharge une copie de toutes tes données, ou importe une sauvegarde.</p><div class="bk-row"><button type="button" class="btn light" data-act="export">Télécharger</button><button type="button" class="btn light" data-act="import">Importer</button><input type="file" id="impFile" accept="application/json,.json" hidden></div>'
     + '<div style="margin-top:26px"><button type="button" class="mini" data-act="signout">Se déconnecter</button></div>'
@@ -2490,7 +2616,7 @@ function mountSettings(){
   var fb = document.getElementById("fBd"), fp = document.getElementById("fP"), ft = document.getElementById("fT");
   if (fb) fb.onsubmit = function(e){ e.preventDefault(); var v = document.getElementById("bdIn").value; saveSettings({birthday: v ? v.slice(5) : null}).then(function(){ toast(v ? "Ton anniversaire est noté." : "Date retirée."); applyMonth(); makeDrift(); render(); }); };
   fp.onsubmit = function(e){ e.preventDefault(); if (!needDb()) return; var n = document.getElementById("pName").value.trim(); if (!n) return; db.collection("people").add({name:cap(n), every:+document.getElementById("pEvery").value, last:null}).then(function(){ toast(cap(n) + " ajouté(e) à tes proches."); setTimeout(refreshSettings, 300); }).catch(dbErr); };
-  mountLearn();
+  mountLearn(); mountPlan();
   ft.onsubmit = function(e){ e.preventDefault(); var n = document.getElementById("tName").value.trim(); if (!n) return; var topics = ((S.settings && S.settings.topics) || []).slice(); if (topics.indexOf(n) < 0) topics.push(n); saveSettings({topics:topics}).then(function(){ toast("Sujet ajouté. Il apparaîtra dès qu'il y aura du nouveau."); refreshSettings(); }); };
 }
 function learnSettingsHTML(){
@@ -3153,6 +3279,9 @@ document.addEventListener("click", function(e){
   if (act === "week-off"){ S.weekOff = Math.max(0, (S.weekOff || 0) + (+b.dataset.n)); var m0 = addDays(monday(today()), 7 * S.weekOff); S.daySel = S.weekOff ? iso(m0) : iso(today()); render(); return; }
   if (act === "bday-all"){ bdayAllSheet(); return; }
   if (act === "import"){ var fi = document.getElementById("impFile"); if (fi) fi.click(); return; }
+  if (act === "plan-pick"){ var pf = document.getElementById("thFile"); if (pf) pf.click(); return; }
+  if (act === "plan-apply"){ planApply(); return; }
+  if (act === "plan-cancel"){ PLAN = null; var pb = document.getElementById("thPrev"); if (pb) pb.innerHTML = ""; return; }
   if (act === "signout"){ if (window.APP_SIGNOUT) window.APP_SIGNOUT(); return; }
   if (act === "topic"){ S.topicFilter = b.dataset.t; render(); return; }
   if (act === "acc-sec"){ S.accSection = b.dataset.s; try { localStorage.setItem("accSection", S.accSection); } catch(err){} var sx = document.querySelector(".bubbles-wrap"), keep = sx ? sx.scrollLeft : 0; render(); var nx2 = document.querySelector(".bubbles-wrap"); if (nx2) nx2.scrollLeft = keep; var pb = document.querySelector('.bubble[data-s="' + S.accSection + '"]'); if (pb) pb.focus({preventScroll:true}); return; }

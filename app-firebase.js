@@ -117,6 +117,7 @@ function makeCal(email){
     if (a.recurrenceData) body.recurrence = a.recurrenceData;
     if (a.location) body.location = a.location;
     if (a.colorId) body.colorId = a.colorId;
+    if (a.transparency) body.transparency = a.transparency;
     const j = await api("POST", "/calendars/" + encodeURIComponent(a.calendarId) + "/events", body);
     return { payload: j };
   }
