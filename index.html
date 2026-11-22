@@ -651,6 +651,14 @@ body.add-on{overflow:hidden}
 .add-head h2{font-size:22px;font-weight:800;color:var(--text)}
 .add-head .close{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#FFFFFF;display:grid;place-items:center;color:var(--text);padding:0}
 #addSlot .capture{margin:0}
+.trc{background:#F4F9FD;border:1px solid #DCEBF7;border-radius:18px;padding:12px 14px;margin-bottom:12px}
+.trh{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;color:#2C679C;margin-bottom:6px}
+.trbar{flex:1;height:6px;border-radius:3px;background:#DCEBF7;overflow:hidden}.trbar i{display:block;height:100%;background:#2C679C;border-radius:3px}
+.trs{margin:0;font-size:16px;font-weight:800;color:var(--text)}.tre{margin:4px 0 0;font-size:13px;font-weight:700;color:var(--muted)}
+.trm{margin:6px 0 0;font-size:12.5px;font-weight:700;color:var(--muted)}.trok{margin:6px 0 0;font-size:13px;font-weight:800;color:#2F7440}
+.trb{display:flex;justify-content:space-between;margin-top:2px}.trb .mini{min-height:32px;padding:4px 0}
+#addSheet.trdone #captureForm,#addSheet.trdone .add-tip{display:none}
+#addSheet.training .add-tip{display:none}
 .add-tip{margin-top:10px;font-size:13px;font-weight:600;color:var(--muted);line-height:1.45}
 #addSlot .cap-prev~.add-tip,#addSlot:has(.cap-prev)+.add-tip{display:none}
 
@@ -810,13 +818,13 @@ body.agpage .settings-link{display:none}
 </nav>
 <div id="moreRoot" hidden></div>
 
-<div id="addRoot" hidden><div class="add-wrap" id="addWrap"><div class="add-sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addT"><span class="add-grab" aria-hidden="true"></span><div class="add-head"><h2 id="addT">Ajouter</h2><button type="button" class="close" data-act="add-close" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div id="addSlot"></div><p class="add-tip" id="addTip">Écris ou dicte, comme tu le dirais : « dentiste mardi 14h », « rappelle-moi d'appeler maman », « note : idées cadeaux »…</p></div></div></div>
+<div id="addRoot" hidden><div class="add-wrap" id="addWrap"><div class="add-sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addT"><span class="add-grab" aria-hidden="true"></span><div class="add-head"><h2 id="addT">Ajouter</h2><button type="button" class="close" data-act="add-close" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div id="trainCard" hidden></div><div id="addSlot"></div><p class="add-tip" id="addTip">Écris ou dicte, comme tu le dirais : « dentiste mardi 14h », « rappelle-moi d'appeler maman », « note : idées cadeaux »…</p></div></div></div>
 <div id="sheetRoot"></div>
 <div id="toastRoot" aria-live="polite"></div>
 
 
 <script>
-var APP_VERSION = "Planner_0.32";
+var APP_VERSION = "Planner_0.33";
 (function(){
 "use strict";
 var CAL = "alessia.caruso2511@gmail.com";
@@ -2049,7 +2057,7 @@ function renderPreview(first){
     + '<div class="cp-kinds" role="group" aria-label="Type">' + chips + '</div>'
     + (f ? '<div class="cp-f">' + f + '</div>' : "")
     + '<p class="cp-out" id="cpOut" aria-live="polite"></p>'
-    + '<div class="cp-act"><button type="button" class="btn-line" data-cp="cancel">Annuler</button><button type="button" class="btn-ink" data-cp="ok">Valider</button></div>';
+    + '<div class="cp-act"><button type="button" class="btn-line" data-cp="cancel">Annuler</button><button type="button" class="btn-ink" data-cp="ok">' + (S.train ? "Retenir" : "Valider") + '</button></div>';
   updatePreviewOut();
   box.querySelectorAll("[data-cpk]").forEach(function(b){ b.onclick = function(){ readPreview(); var k = b.dataset.cpk; F.kind = k; if ((k === "event" || k === "birthday") && !F.date) F.date = iso(today()); if (k === "birthday" && !F.person) F.person = F.core; if (k === "note" && !F.noteBody && CP.F0.kind !== "note"){ var fn = freeNote(stripPolite(CP.text).replace(/^(?:(?:cr[ée]{1,2}(?:r|s|z)?|fais|écris|ecris|prends|mets|ajoute)[\s-]+)?(?:moi\s+)?(?:une\s+)?(?:nouvelle\s+)?note\s*(?:pour\s+(?:noter|dire|retenir)\s+)?(?:que\s+|qu['’]\s*)?/i, "")); F.noteBody = fn.text; if (!F.noteTitle) F.noteTitle = fn.title; F.todo = false; } renderPreview(false); }; });
   box.querySelectorAll("input,textarea").forEach(function(inp){ inp.addEventListener("input", function(){ readPreview(); updatePreviewOut(); refreshCatChips(); }); if (inp.tagName === "INPUT") inp.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); validatePreview(); } }); });
@@ -2312,6 +2320,35 @@ document.addEventListener("click", function(e){
   document.addEventListener("contextmenu", function(e){ if (e.target.closest && e.target.closest("#mGrid")) e.preventDefault(); });
 })();
 /* ---------- panneau d'ajout (bouton + au milieu) ---------- */
+var TRAIN = [
+  {q:"Un rendez-vous médical (dentiste, médecin, kiné…), avec le jour et l'heure.", ex:"dentiste mardi 14h30"},
+  {q:"Ton cours de danse de la semaine prochaine.", ex:"cours de danse jeudi 19h au studio"},
+  {q:"Un repas ou une sortie avec des amis, chez quelqu'un ou au resto.", ex:"resto avec Marie-Sarah et Mat samedi soir"},
+  {q:"L'anniversaire d'un proche.", ex:"anniversaire de maman le 12 mars"},
+  {q:"Une démarche à faire : impôts, banque, papiers…", ex:"appeler la banque lundi 10h"},
+  {q:"Quelqu'un à rappeler ou à qui envoyer un message.", ex:"rappeler Thaïs demain"},
+  {q:"Une idée ou une info à garder en note.", ex:"idée cadeau pour Théo : un appareil photo"},
+  {q:"Un projet en plusieurs étapes (une quête).", ex:"préparer le voyage au Vietnam"},
+  {q:"Un petit exploit dont tu es fière.", ex:"j'ai fini tous mes papiers"},
+  {q:"Un week-end ou un voyage sur plusieurs jours.", ex:"week-end à Lyon du 6 au 8 février"},
+  {q:"Un rendez-vous pour le travail (client, fournisseur…).", ex:"rdv client Climaffaires vendredi 9h"},
+  {q:"Une phrase que tu dis souvent, à ta façon.", ex:"ce que tu veux !"}
+];
+var LEARN_LBL = {type:"le type", domaine:"la couleur", lieu:"le lieu", titre:"le titre"};
+function trainPaint(){
+  var c = document.getElementById("trainCard"), t = document.getElementById("addT"), sh = document.getElementById("addSheet"), T = S.train;
+  if (!c) return;
+  if (!T){ c.hidden = true; c.innerHTML = ""; t.textContent = "Ajouter"; sh.classList.remove("trdone", "training"); return; }
+  t.textContent = "Entraînement"; c.hidden = false; sh.classList.add("training");
+  var done = T.i >= TRAIN.length; sh.classList.toggle("trdone", done);
+  if (done){ c.innerHTML = '<div class="trc"><p class="trs">Bravo, entraînement terminé !</p><p class="trm">' + T.ok + ' compris du premier coup, ' + T.fixed + ' corrigé' + (T.fixed > 1 ? "s" : "") + ' et retenu' + (T.fixed > 1 ? "s" : "") + '. Tu peux recommencer quand tu veux : chaque correction rend l\'appli plus juste.</p><div class="bk-row"><button type="button" class="btn" data-act="train-again" style="background:var(--ink);color:#FFFFFF">Recommencer</button><button type="button" class="btn light" data-act="add-close">Fermer</button></div></div>'; return; }
+  var q = TRAIN[T.i];
+  c.innerHTML = '<div class="trc"><div class="trh"><span>' + (T.i + 1) + ' / ' + TRAIN.length + '</span><span class="trbar"><i style="width:' + Math.round(T.i / TRAIN.length * 100) + '%"></i></span></div>'
+    + '<p class="trs">' + h(q.q) + '</p><p class="tre">Par exemple : « ' + h(q.ex) + ' »</p>'
+    + (T.msg ? '<p class="trok">' + h(T.msg) + '</p>' : '<p class="trm">Écris ou dicte-le comme tu le dirais vraiment. Si je me trompe, corrige l\'aperçu puis valide : rien n\'est ajouté à ton agenda.</p>')
+    + '<div class="trb"><button type="button" class="mini" data-act="train-skip">Passer</button><button type="button" class="mini" data-act="train-end">Terminer</button></div></div>';
+}
+function trainOpen(){ closeSheet(); S.train = {i:0, ok:0, fixed:0, msg:""}; addOpen(); trainPaint(); }
 function addOpen(){
   var root = document.getElementById("addRoot"), slot = document.getElementById("addSlot");
   ["captureForm","capPrev","captureHint"].forEach(function(id){ var el = document.getElementById(id); if (el) slot.appendChild(el); });
@@ -2322,6 +2359,7 @@ function addOpen(){
 function addClose(){
   var root = document.getElementById("addRoot"); if (root.hidden) return;
   if (CP){ CP = null; renderPreview(); }
+  if (S.train){ S.train = null; trainPaint(); }
   var zone = document.getElementById("captureZone");
   ["captureForm","captureHint"].forEach(function(id){ var el = document.getElementById(id); if (el) zone.appendChild(el); });
   root.hidden = true; document.body.classList.remove("add-on");
@@ -2340,6 +2378,14 @@ function cancelPreview(){
 }
 function validatePreview(){
   if (!CP) return; readPreview();
+  if (S.train){
+    var lr = learnFrom(CP.F0, CP.F, CP.text);
+    if (lr.length){ S.train.fixed++; S.train.msg = "Retenu : " + lr.map(function(k){ return LEARN_LBL[k] || k; }).join(", ") + ". Je ferai mieux la prochaine fois."; }
+    else { S.train.ok++; S.train.msg = "Parfait, compris du premier coup."; }
+    CP = null; renderPreview(); S.train.i++; trainPaint();
+    var ti = document.getElementById("captureInput"); if (ti && S.train.i < TRAIN.length) setTimeout(function(){ ti.focus(); }, 60);
+    return;
+  }
   var F = CP.F, text = CP.text, hint = document.getElementById("captureHint");
   if (F.kind === "event" && !F.date){ var d = document.getElementById("cpDate"); if (d) d.focus(); return; }
   var r = buildFinal(F, text), learned = learnFrom(CP.F0, F, text);
@@ -2627,7 +2673,7 @@ function learnSettingsHTML(){
   var L = learnData(), pk = Object.keys(L.places), rk = Object.keys(L.rewrites);
   var line = function(lbl, t, k){ return '<div class="list-line"><span>' + lbl + '</span><button type="button" class="mini" data-act="learn-del" data-t="' + t + '" data-k="' + h(k) + '">Retirer</button></div>'; };
   var opts = ["event","quest","exploit","note","birthday"].map(function(k){ return '<option value="' + k + '">' + KIND_LBL[k] + '</option>'; }).join("");
-  return '<h3 style="margin:26px 0 6px">Ce que l\'appli a appris</h3><p style="font-size:13px;color:var(--muted);margin-bottom:6px">Quand tu corriges l\'aperçu avant de valider, l\'appli retient ta correction. Tu peux aussi lui apprendre tes mots ici.</p>'
+  return '<h3 style="margin:26px 0 6px">Ce que l\'appli a appris</h3><p style="font-size:13px;color:var(--muted);margin-bottom:6px">Quand tu corriges l\'aperçu avant de valider, l\'appli retient ta correction. Tu peux aussi lui apprendre tes mots ici.</p><button type="button" class="btn" data-act="train-open" style="width:100%;margin:4px 0 14px;background:var(--ink);color:#FFFFFF">S\'entraîner : ' + TRAIN.length + ' situations</button>'
     + '<p class="learn-sub">Lieux</p>' + (pk.length ? pk.map(function(k){ return line("« " + h(k) + " » → " + h(L.places[k]), "place", k); }).join("") : '<p class="soft-empty" style="padding:0">Aucun pour l\'instant.</p>')
     + '<form id="fLp" class="fgrid" style="margin:8px 0 6px"><div class="field"><label for="lpRaw">Quand j\'écris</label><input id="lpRaw" type="text" required placeholder="la sauce"></div><div class="field"><label for="lpVal">C\'est le lieu</label><input id="lpVal" type="text" required placeholder="Studio La Sauce"></div><button class="btn green" type="submit" style="grid-column:1/-1">Ajouter ce lieu</button></form>'
     + '<p class="learn-sub">Types</p>' + (L.kinds.length ? L.kinds.map(function(r, i){ return line("« " + h(r.w.join(" ")) + " » → " + KIND_LBL[r.k], "kind", i); }).join("") : '<p class="soft-empty" style="padding:0">Aucun pour l\'instant.</p>')
@@ -3285,6 +3331,10 @@ document.addEventListener("click", function(e){
   if (act === "import"){ var fi = document.getElementById("impFile"); if (fi) fi.click(); return; }
   if (act === "plan-pick"){ var pf = document.getElementById("thFile"); if (pf) pf.click(); return; }
   if (act === "plan-apply"){ planApply(); return; }
+  if (act === "train-open"){ trainOpen(); return; }
+  if (act === "train-skip"){ if (S.train){ CP = null; renderPreview(); S.train.i++; S.train.msg = ""; trainPaint(); } return; }
+  if (act === "train-end"){ if (S.train){ CP = null; renderPreview(); S.train.i = TRAIN.length; trainPaint(); } return; }
+  if (act === "train-again"){ S.train = {i:0, ok:0, fixed:0, msg:""}; trainPaint(); var ti2 = document.getElementById("captureInput"); if (ti2) ti2.focus(); return; }
   if (act === "plan-all"){ if (PLAN){ PLAN.all = true; document.getElementById("thPrev").innerHTML = planPrevHTML(PLAN); } return; }
   if (act === "plan-cancel"){ PLAN = null; var pb = document.getElementById("thPrev"); if (pb) pb.innerHTML = ""; return; }
   if (act === "signout"){ if (window.APP_SIGNOUT) window.APP_SIGNOUT(); return; }
